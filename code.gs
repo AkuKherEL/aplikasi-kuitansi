@@ -1,0 +1,85 @@
+// =====================================================================
+// WAJIB DIISI JIKA SCRIPT BERDIRI SENDIRI (STANDALONE)
+// =====================================================================
+var SPREADSHEET_ID = "MASUKKAN_ID_SPREADSHEET_ANDA_DISINI"; 
+
+// --- REST API: MENANGANI REQUEST GET DARI VERCEL (MEMUAT DATA) ---
+function doGet(e) {
+  try {
+    var data = getAllData();
+    // Mengembalikan data ke Vercel dalam format JSON
+    return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: data }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// --- REST API: MENANGANI REQUEST POST DARI VERCEL (MENYIMPAN DATA) ---
+function doPost(e) {
+  try {
+    // Menerima JSON dari frontend (Vercel)
+    var payload = JSON.parse(e.postData.contents);
+    var savedData = simpanData(payload);
+    
+    // Mengembalikan konfirmasi sukses ke frontend
+    return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: savedData }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// =====================================================================
+// FUNGSI UTAMA DATABASE (TIDAK BERUBAH BANYAK)
+// =====================================================================
+
+function setupSheet() {
+  var ss;
+  try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
+  
+  if (!ss) {
+    if (SPREADSHEET_ID === "MASUKKAN_ID_SPREADSHEET_ANDA_DISINI" || SPREADSHEET_ID === "") {
+      throw new Error("⚠️ SPREADSHEET_ID BELUM DIISI!");
+    }
+    ss = SpreadsheetApp.openById(SPREADSHEET_ID.trim());
+  }
+
+  var sheet = ss.getSheetByName('data_kuitansi');
+  if (!sheet) {
+    sheet = ss.insertSheet('data_kuitansi');
+    sheet.appendRow(['ID Kuitansi', 'Tanggal', 'Tgl Cetak Indo', 'Nama', 'Jumlah (Rp)', 'Terbilang', 'Keperluan', 'No Surat']);
+    sheet.getRange('A1:H1').setFontWeight('bold').setBackground('#d0e0e3');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function simpanData(data) {
+  if (!data || !data.nama) {
+    throw new Error("Data tidak valid / kosong.");
+  }
+  var sheet = setupSheet();
+  sheet.appendRow([
+    data.id, data.tglBiasa, data.tglIndo, data.nama,
+    data.jumlahRp, data.terbilang, data.keperluan, data.noSurat
+  ]);
+  return data; 
+}
+
+function getAllData() {
+  var sheet = setupSheet();
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+  
+  for (var i = 1; i < data.length; i++) {
+    result.push({
+      id: data[i][0], tglBiasa: data[i][1], tglIndo: data[i][2],
+      nama: data[i][3], jumlahRp: data[i][4], terbilang: data[i][5],
+      keperluan: data[i][6], noSurat: data[i][7]
+    });
+  }
+  return result.reverse(); 
+}
