@@ -75,10 +75,10 @@
   <div id="login-screen" class="fixed inset-0 flex items-center justify-center z-[100] bg-slate-900 overflow-hidden">
     
     <!-- Gambar Latar Belakang (Menggunakan Tag IMG agar lebih kebal error) -->
-    <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop" 
+    <img src="https://image.thum.io/get/width/1920/crop/1080/noanimate/https://labkons.ganotek.com/" 
          class="absolute inset-0 w-full h-full object-cover opacity-40 z-0" 
-         alt="Background Gedung" 
-         onerror="this.style.display='none'">
+         alt="Background Web Labkons" 
+         onerror="this.src='https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=2071&auto=format&fit=crop'">
     
     <!-- Overlay Gelap dengan Blur -->
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] z-10"></div>
@@ -592,7 +592,7 @@
 
     // --- SISTEM LOGIN YANG TERPUSAT DENGAN DATABASE ---
     function checkAuth() {
-      const isLoggedIn = localStorage.getItem('isLoggedIn_blud');
+      const isLoggedIn = sessionStorage.getItem('isLoggedIn_blud');
       if (isLoggedIn === 'true') {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-wrapper').style.display = 'block';
@@ -641,7 +641,7 @@
       // Mode Offline (Jika API belum diisi)
       if(API_URL === "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
         if(user === 'admin' && pass === 'admin123') {
-           localStorage.setItem('isLoggedIn_blud', 'true');
+           sessionStorage.setItem('isLoggedIn_blud', 'true');
            document.getElementById('login-screen').style.display = 'none';
            document.getElementById('app-wrapper').style.display = 'block';
            console.warn("⚠️ API_URL belum diisi! Menjalankan mode offline dengan data dummy.");
@@ -668,7 +668,7 @@
           let validPass = result.pengaturan ? (result.pengaturan.passLogin || 'admin123') : 'admin123';
 
           if (user === validUser && pass === validPass) {
-            localStorage.setItem('isLoggedIn_blud', 'true');
+            sessionStorage.setItem('isLoggedIn_blud', 'true');
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-wrapper').style.display = 'block';
             
@@ -693,7 +693,7 @@
 
     function logout() {
       if(confirm('Yakin ingin keluar dari aplikasi?')) {
-        localStorage.removeItem('isLoggedIn_blud');
+        sessionStorage.removeItem('isLoggedIn_blud');
         location.reload();
       }
     }
@@ -1042,7 +1042,8 @@
         try {
           result = JSON.parse(text);
         } catch (e) {
-          throw new Error("Server gagal mengembalikan JSON. Pastikan sudah Deploy versi baru.");
+          console.error("Server HTML Response:", text);
+          throw new Error("Server gagal mengembalikan JSON. Jika Anda mengaktifkan upload Google Drive, pastikan Anda sudah melakukan Deploy sebagai 'New Deployment'.");
         }
 
         if(result.status === 'success') {
@@ -1205,7 +1206,7 @@
           result = JSON.parse(text);
         } catch (e) {
           console.error("Server HTML Response:", text);
-          throw new Error("Server gagal mengembalikan JSON. Jika Anda mengaktifkan upload Lampiran ke Google Drive, pastikan Anda sudah melakukan Deploy sebagai 'New Deployment'.");
+          throw new Error("Server gagal mengembalikan JSON.");
         }
 
         if(result.status === 'success') {
