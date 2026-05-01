@@ -160,7 +160,6 @@
             <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 relative">
               <div class="absolute top-0 right-0 mt-3 mr-4 text-indigo-300 text-xs font-bold uppercase">📅 Tanggal</div>
               <label class="block text-sm font-bold text-indigo-900 mb-2">Tanggal Cetak <span class="text-red-500">*</span></label>
-              <!-- Tambahkan onchange agar Nomor Kuitansi update jika tahun tanggal berubah -->
               <input type="date" id="tanggalKuitansi" onchange="updateGeneratedId()" required class="w-full bg-white border border-indigo-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-700 shadow-sm">
               <p class="text-xs text-indigo-500 mt-2 font-medium">Tanggal ini yang akan tercetak.</p>
             </div>
@@ -489,7 +488,7 @@
     let namaFileDokumen = "";
     let mimeTypeDokumen = "";
 
-    // --- Background Upload Sthiti ---
+    // --- Background Upload State ---
     let pendingBgBase64 = "";
     let pendingBgMimeType = "";
     let pendingBgFileName = "";
@@ -624,7 +623,6 @@
           const selectedOption = select.options[select.selectedIndex];
           const namaPengujian = selectedOption.getAttribute('data-nama');
           
-          // Menambahkan harga @ satuan di dalam kurung tanpa kata UJI
           rincianKeperluan.push(`${namaPengujian} (${qty} Sampel @ Rp ${formatRpNumber(harga)})`);
         } else {
           subtotalText.innerText = 'Rp 0,00';
@@ -670,10 +668,9 @@
       let currentYear = new Date().getFullYear().toString();
       
       if (tglInput) {
-        currentYear = tglInput.split('-')[0]; // Ambil tahun dari input YYYY-MM-DD
+        currentYear = tglInput.split('-')[0];
       }
 
-      // Hitung jumlah kuitansi di database untuk tahun yang relevan
       const kuitansiTahunIni = dbKuitansi.filter(item => {
         if (item.tglBiasa) {
           return item.tglBiasa.endsWith('/' + currentYear);
@@ -684,7 +681,6 @@
       const nextNum = kuitansiTahunIni.length + 1;
       const formattedNum = nextNum.toString().padStart(3, '0');
       
-      // Format 001/KWT/LBK/2026
       document.getElementById('noKuitansi').value = `${formattedNum}/KWT/LBK/${currentYear}`;
     }
 
@@ -795,7 +791,7 @@
       if(valNip) valNip.innerText = nip ? 'NIP. ' + nip : '';
     }
 
-    // --- BACKGROUND IMAGE NIRVAHANE ---
+    // --- MANAJEMEN GAMBAR BACKGROUND ---
     function handleUploadBlanko(event) {
       const file = event.target.files[0];
       if (file) {
@@ -811,7 +807,7 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           pendingBgBase64 = e.target.result;
-          applyBlankoBackground(e.target.result); // Preview torisu
+          applyBlankoBackground(e.target.result); // Tampilkan pratinjau langsung
         };
         reader.readAsDataURL(file);
       }
@@ -846,7 +842,7 @@
       const nip = document.getElementById('settingNipTtd').value;
       
       document.getElementById('loading-overlay').style.display = 'flex';
-      document.getElementById('loading-text').innerText = pendingBgBase64 ? "Menyimpan Data Bendahara & Background ke Database..." : "Menyimpan Data Bendahara & Background ke Database...";
+      document.getElementById('loading-text').innerText = pendingBgBase64 ? "Menyimpan Data Bendahara & Background ke Database..." : "Menyimpan Data Bendahara ke Database...";
       
       const payload = { 
         action: 'save_pengaturan', 
@@ -1032,7 +1028,6 @@
     }
 
     function isiLayoutKuitansi(data) {
-      // Tidak lagi memotong ID berdasarkan '-', membiarkan ID lengkap 001/KWT/LBK/2026
       let displayId = data.id;
         
       document.getElementById('valId').innerText = displayId || '...'; 
@@ -1186,39 +1181,6 @@
         localStorage.removeItem('kuitansi_coords_v7');
         loadTextCoordinates(); alert('Posisi dikembalikan ke standar. Silakan reload halaman.'); location.reload();
       }
-    }
-
-    function handleUploadBlanko(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          localStorage.setItem('blanko_image', e.target.result); 
-          applyBlankoBackground(e.target.result);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function applyBlankoBackground(base64Image) {
-      const bgDiv = document.getElementById('bg-blanko');
-      if(base64Image) {
-        bgDiv.style.backgroundImage = `url('${base64Image}')`;
-        bgDiv.innerHTML = ''; bgDiv.classList.remove('bg-slate-100', 'border-dashed');
-      }
-    }
-
-    function loadBlankoBackground() {
-      const savedBg = localStorage.getItem('blanko_image');
-      if (savedBg) applyBlankoBackground(savedBg);
-    }
-
-    function hapusBlanko() {
-      localStorage.removeItem('blanko_image');
-      const bgDiv = document.getElementById('bg-blanko');
-      bgDiv.style.backgroundImage = 'none'; bgDiv.classList.add('bg-slate-100', 'border-dashed');
-      bgDiv.innerHTML = `<div class="text-center p-6 bg-white/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200"><div class="text-3xl mb-2">📸</div><p class="text-slate-500 font-bold mb-1">Background Blanko Kosong</p><p class="text-xs text-slate-400">Unggah foto blangko di menu "Kalibrasi"</p></div>`;
-      document.getElementById('uploadBlanko').value = '';
     }
 
     function renderHistory() {
