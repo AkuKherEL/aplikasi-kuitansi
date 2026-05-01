@@ -475,6 +475,10 @@
   </div>
 
   <script>
+    // =========================================================================
+    // WAJIB DIISI SEBELUM DEPLOY KE VERCEL
+    // Masukkan URL Web App Google Apps Script Anda pada variabel API_URL di bawah ini
+    // =========================================================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwoypR-32yY4TLXbXt29E7_Y5-dAPWsCbcCzwi-7tleqTuFkS7vFapU4yqDhPEan5LW/exec";
 
     // --- State Management ---
@@ -526,6 +530,7 @@
       }
     }
 
+    // --- Format Rupiah Global function ---
     function formatRpNumber(angka) {
       let number_string = angka.toString().replace(/[^,\d]/g, '');
       let split = number_string.split(',');
@@ -537,6 +542,7 @@
       return rupiah + ',' + desimal;
     }
 
+    // --- KERANJANG PENGUJIAN DINAMIS ---
     const daftarProduk = [
       { grup: "Daftar Mix Formula (DMF)", isUji: false, items: [
         { nama: "DMF LPA KELAS A", harga: 2935000 },
@@ -724,9 +730,17 @@
     function loadDataFromServer() {
       document.getElementById('loading-overlay').style.display = 'flex';
       
-      fetch(API_URL)
-        .then(response => response.json())
-        .then(result => {
+      fetch(API_URL, { redirect: 'follow' })
+        .then(response => response.text())
+        .then(text => {
+          let result;
+          try {
+            result = JSON.parse(text);
+          } catch (e) {
+            console.error("Respon tidak valid:", text);
+            throw new Error("Gagal membaca data dari server. Pastikan API_URL benar dan Web App diset ke 'Anyone'.");
+          }
+
           if (result.status === 'success') {
             dbKuitansi = result.data || [];
             
@@ -737,11 +751,13 @@
 
             setTanggalHariIni(); updateGeneratedId();
             
+            // Pengaturan bendahara dari Database
             if (result.pengaturan) {
               document.getElementById('settingNamaTtd').value = result.pengaturan.nama;
               document.getElementById('settingNipTtd').value = result.pengaturan.nip;
               updateTtdUI();
 
+              // Google Drive Background load
               currentBgUrl = result.pengaturan.bgUrl;
               if(currentBgUrl && currentBgUrl !== "") {
                 applyBlankoBackground(currentBgUrl);
@@ -752,7 +768,7 @@
           }
         })
         .catch(err => {
-          alert("Terjadi kesalahan jaringan (Pastikan link URL Web App benar dan bisa diakses public): " + err.message);
+          alert("Terjadi kesalahan jaringan: " + err.message);
         })
         .finally(() => {
           document.getElementById('loading-overlay').style.display = 'none';
@@ -803,7 +819,7 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           pendingBgBase64 = e.target.result;
-          applyBlankoBackground(e.target.result); 
+          applyBlankoBackground(e.target.result); // Tampilkan pratinjau langsung
         };
         reader.readAsDataURL(file);
       }
@@ -850,15 +866,25 @@
         clearBg: isBgCleared
       };
 
+      // Ditambahkan redirect: 'follow' agar tidak error CORS saat Google melakukan redirect
       fetch(API_URL, {
         method: 'POST',
+        redirect: 'follow', 
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       })
-      .then(response => response.json())
-      .then(result => {
+      .then(response => response.text())
+      .then(text => {
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (e) {
+          console.error("Server HTML Response:", text);
+          throw new Error("Server gagal mengembalikan JSON. Jika Anda mengaktifkan upload Google Drive, pastikan Anda sudah melakukan Deploy sebagai 'New Deployment' dan mengizinkan otorisasi Drive.");
+        }
+
         if(result.status === 'success') {
-          alert("✅ Data Bendahara & Background berhasil disimpan permanen ke Google Sheets!");
+          alert("✅ Data Bendahara & Background berhasil disimpan permanen ke Database!");
           
           pendingBgBase64 = "";
           isBgCleared = false;
@@ -867,10 +893,10 @@
             applyBlankoBackground(currentBgUrl);
           }
         } else {
-          alert("Gagal menyimpan ke server: " + result.message);
+          alert("Gagal menyimpan ke server: " + result.message + "\n\nSolusi: Jika ini tentang izin Google Drive, lakukan 'New Deployment' di Apps Script.");
         }
       })
-      .catch(err => alert("Terjadi kesalahan jaringan: " + err.message))
+      .catch(err => alert("Terjadi kesalahan sistem/jaringan: " + err.message))
       .finally(() => {
         document.getElementById('loading-overlay').style.display = 'none';
         document.getElementById('loading-text').innerText = "Menyinkronkan Database...";
@@ -1004,13 +1030,23 @@
         document.getElementById('loading-text').innerText = "Menyimpan ke Database...";
       }
       
+      // Ditambahkan redirect: 'follow'
       fetch(API_URL, {
         method: 'POST',
+        redirect: 'follow',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(data)
       })
-      .then(response => response.json())
-      .then(result => {
+      .then(response => response.text())
+      .then(text => {
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (e) {
+          console.error("Server HTML Response:", text);
+          throw new Error("Server gagal mengembalikan JSON. Jika Anda mengaktifkan upload Lampiran ke Google Drive, pastikan Anda sudah melakukan Deploy sebagai 'New Deployment' dan mengizinkan otorisasi Drive.");
+        }
+
         if(result.status === 'success') {
           dbKuitansi.unshift(result.data);
           renderHistory(); 
@@ -1026,7 +1062,7 @@
         }
       })
       .catch(err => {
-        alert("Terjadi kesalahan jaringan saat menyimpan: " + err.message);
+        alert("Terjadi kesalahan saat menyimpan: " + err.message);
       })
       .finally(() => {
         document.getElementById('loading-overlay').style.display = 'none';
@@ -1240,11 +1276,11 @@
       const fBulan = document.getElementById('filterBulan').value;
       const fTahun = document.getElementById('filterTahun').value;
 
-      let filtered = [...dbKuitansi].reverse();
+      let filtered = [...dbKuitansi].reverse(); // Urutan dari terlama ke terbaru
 
       if (fTahun !== 'ALL') {
         filtered = filtered.filter(item => {
-          const parts = item.tglBiasa.split('/'); 
+          const parts = item.tglBiasa.split('/'); // Asumsi format DD/MM/YYYY
           return parts[2] === fTahun;
         });
       }
@@ -1256,6 +1292,7 @@
         });
       }
 
+      // Update Teks Judul Cetak Laporan
       let teksPeriode = "TAHUN " + (fTahun === 'ALL' ? "KESELURUHAN" : fTahun);
       if (fBulan !== 'ALL') {
         const selBulan = document.getElementById('filterBulan');
