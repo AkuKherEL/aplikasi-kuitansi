@@ -1,5 +1,8 @@
 // =====================================================================
-// WAJIB DIISI JIKA SCRIPT BERDIRI SENDIRI (STANDALONE)
+// WAJIB DIISI SEBELUM DEPLOY!
+// Salin ID Spreadsheet Anda dari URL. 
+// Contoh URL: https://docs.google.com/spreadsheets/d/1A2b3C4d5E6f7G8h9I0j/edit
+// Maka ID-nya adalah: 1A2b3C4d5E6f7G8h9I0j
 // =====================================================================
 var SPREADSHEET_ID = "1wnoKPdmHYx97GrmMOUjKuwvqJA4rADT9xTFhJKaOU0g"; 
 
@@ -33,7 +36,7 @@ function doPost(e) {
 }
 
 // =====================================================================
-// FUNGSI UTAMA DATABASE (TIDAK BERUBAH BANYAK)
+// FUNGSI UTAMA DATABASE 
 // =====================================================================
 
 function setupSheet() {
@@ -42,7 +45,7 @@ function setupSheet() {
   
   if (!ss) {
     if (SPREADSHEET_ID === "1wnoKPdmHYx97GrmMOUjKuwvqJA4rADT9xTFhJKaOU0g" || SPREADSHEET_ID === "") {
-      throw new Error("⚠️ SPREADSHEET_ID BELUM DIISI!");
+      throw new Error("⚠️ SPREADSHEET_ID BELUM DIISI DI SCRIPT!");
     }
     ss = SpreadsheetApp.openById(SPREADSHEET_ID.trim());
   }
@@ -71,9 +74,11 @@ function simpanData(data) {
 
 function getAllData() {
   var sheet = setupSheet();
-  var data = sheet.getDataRange().getValues();
+  // Gunakan getDisplayValues agar desimal (,00) terbaca sempurna sebagai teks
+  var data = sheet.getDataRange().getDisplayValues();
   var result = [];
   
+  // Looping dari baris ke-2
   for (var i = 1; i < data.length; i++) {
     result.push({
       id: data[i][0], tglBiasa: data[i][1], tglIndo: data[i][2],
