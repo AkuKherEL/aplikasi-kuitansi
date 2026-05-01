@@ -439,7 +439,7 @@
     // WAJIB DIISI SEBELUM DEPLOY KE VERCEL
     // Masukkan URL Web App Google Apps Script Anda pada variabel API_URL di bawah ini
     // =========================================================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbz_MOno6bDczx-Tebonr4Ss6fn-2kuRi2S7j7Mxjbw9xW1EQF2-WQCyl-Q0TXzI41js7A/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwdn0n1DjSKq8DW72iZ7wcsOCkIzxLzVuzrBbjIWC8g_MNWdg4Wipz5P_qmbbn2gKwikQ/exec";
 
     // --- State Management ---
     let dbKuitansi = [];
@@ -603,7 +603,7 @@
     tambahBarisPengujian(); 
 
     // LOAD DATA DENGAN SISTEM FETCH (UNTUK VERCEL API)
-    if(API_URL !== "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
+    if(API_URL !== "https://script.google.com/macros/s/AKfycbwdn0n1DjSKq8DW72iZ7wcsOCkIzxLzVuzrBbjIWC8g_MNWdg4Wipz5P_qmbbn2gKwikQ/exec") {
       loadDataFromServer();
     } else {
       // Data dummy untuk pengembangan awal bila API_URL belum diisi
@@ -759,7 +759,7 @@
     }
 
     function prosesSimpanData(data, laluCetak) {
-      if(API_URL === "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
+      if(API_URL === "https://script.google.com/macros/s/AKfycbwdn0n1DjSKq8DW72iZ7wcsOCkIzxLzVuzrBbjIWC8g_MNWdg4Wipz5P_qmbbn2gKwikQ/exec") {
         alert("Peringatan: URL API Belum Disetel. Data hanya akan tersimpan sementara di layar Anda.");
         dbKuitansi.unshift(data);
         renderHistory(); renderBukuBesar(); resetForm();
