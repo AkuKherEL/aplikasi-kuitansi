@@ -757,7 +757,7 @@
               document.getElementById('settingNipTtd').value = result.pengaturan.nip;
               updateTtdUI();
 
-              // Google Drive Background load
+              // Memuat Background dari Google Drive
               currentBgUrl = result.pengaturan.bgUrl;
               if(currentBgUrl && currentBgUrl !== "") {
                 applyBlankoBackground(currentBgUrl);
@@ -839,10 +839,19 @@
 
     function applyBlankoBackground(sourceStr) {
       const bgDiv = document.getElementById('bg-blanko');
-      if(sourceStr) {
-        bgDiv.style.backgroundImage = `url('${sourceStr}')`;
-        bgDiv.innerHTML = ''; bgDiv.classList.remove('bg-slate-100', 'border-dashed');
+      if(!sourceStr) return;
+      
+      let finalUrl = sourceStr;
+      // Memperbaiki link Google Drive agar bisa dirender sebagai background image (Bypass CORS blocker)
+      if (finalUrl.includes('drive.google.com') && finalUrl.includes('id=')) {
+          const match = finalUrl.match(/id=([a-zA-Z0-9_-]+)/);
+          if (match && match[1]) {
+              finalUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w2000`;
+          }
       }
+      
+      bgDiv.style.backgroundImage = `url('${finalUrl}')`;
+      bgDiv.innerHTML = ''; bgDiv.classList.remove('bg-slate-100', 'border-dashed');
     }
 
     function simpanPengaturanKeDB() {
@@ -866,7 +875,6 @@
         clearBg: isBgCleared
       };
 
-      // Ditambahkan redirect: 'follow' agar tidak error CORS saat Google melakukan redirect
       fetch(API_URL, {
         method: 'POST',
         redirect: 'follow', 
@@ -1030,7 +1038,6 @@
         document.getElementById('loading-text').innerText = "Menyimpan ke Database...";
       }
       
-      // Ditambahkan redirect: 'follow'
       fetch(API_URL, {
         method: 'POST',
         redirect: 'follow',
