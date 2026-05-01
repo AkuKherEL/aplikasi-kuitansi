@@ -603,7 +603,7 @@
     tambahBarisPengujian(); 
 
     // LOAD DATA DENGAN SISTEM FETCH (UNTUK VERCEL API)
-    if(API_URL !== "https://script.google.com/macros/s/AKfycbwdn0n1DjSKq8DW72iZ7wcsOCkIzxLzVuzrBbjIWC8g_MNWdg4Wipz5P_qmbbn2gKwikQ/exec") {
+    if(API_URL !== "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
       loadDataFromServer();
     } else {
       // Data dummy untuk pengembangan awal bila API_URL belum diisi
@@ -759,7 +759,7 @@
     }
 
     function prosesSimpanData(data, laluCetak) {
-      if(API_URL === "https://script.google.com/macros/s/AKfycbwdn0n1DjSKq8DW72iZ7wcsOCkIzxLzVuzrBbjIWC8g_MNWdg4Wipz5P_qmbbn2gKwikQ/exec") {
+      if(API_URL === "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
         alert("Peringatan: URL API Belum Disetel. Data hanya akan tersimpan sementara di layar Anda.");
         dbKuitansi.unshift(data);
         renderHistory(); renderBukuBesar(); resetForm();
