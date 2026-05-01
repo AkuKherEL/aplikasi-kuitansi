@@ -1,7 +1,7 @@
 // =====================================================================
 // WAJIB DIISI JIKA SCRIPT BERDIRI SENDIRI (STANDALONE)
 // =====================================================================
-var SPREADSHEET_ID = "MASUKKAN_ID_SPREADSHEET_ANDA_DISINI"; 
+var SPREADSHEET_ID = "1wnoKPdmHYx97GrmMOUjKuwvqJA4rADT9xTFhJKaOU0g"; 
 
 // --- REST API: MENANGANI REQUEST GET DARI VERCEL (MEMUAT DATA) ---
 function doGet(e) {
@@ -41,7 +41,7 @@ function setupSheet() {
   try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
   
   if (!ss) {
-    if (SPREADSHEET_ID === "MASUKKAN_ID_SPREADSHEET_ANDA_DISINI" || SPREADSHEET_ID === "") {
+    if (SPREADSHEET_ID === "1wnoKPdmHYx97GrmMOUjKuwvqJA4rADT9xTFhJKaOU0g" || SPREADSHEET_ID === "") {
       throw new Error("⚠️ SPREADSHEET_ID BELUM DIISI!");
     }
     ss = SpreadsheetApp.openById(SPREADSHEET_ID.trim());
