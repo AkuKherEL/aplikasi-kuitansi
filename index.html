@@ -602,6 +602,7 @@
       kalkulasiTotalPengujian();
     }
 
+    // FUNGSI INI TELAH DIPERBAIKI UNTUK MENGHINDARI ERROR SAAT KONVERSI ANGKA (ANTI GAGAL)
     function kalkulasiTotalPengujian() {
       const rows = document.querySelectorAll('.pengujian-row');
       let grandTotal = 0;
@@ -612,35 +613,39 @@
         const qtyInput = row.querySelector('.qty-input');
         const subtotalText = row.querySelector('.subtotal-text');
 
-        if (select.value) {
-          const harga = parseInt(select.value);
+        if (select && select.value) {
+          const harga = parseInt(select.value) || 0;
           const qty = parseInt(qtyInput.value) || 1;
           const subtotal = harga * qty;
           
           grandTotal += subtotal;
-          subtotalText.innerText = 'Rp ' + formatRpNumber(subtotal);
+          if(subtotalText) subtotalText.innerText = 'Rp ' + formatRpNumber(subtotal);
 
           const selectedOption = select.options[select.selectedIndex];
-          const namaPengujian = selectedOption.getAttribute('data-nama');
-          
-          rincianKeperluan.push(`${namaPengujian} (${qty} Sampel @ Rp ${formatRpNumber(harga)})`);
+          if(selectedOption) {
+            const namaPengujian = selectedOption.getAttribute('data-nama');
+            rincianKeperluan.push(`${namaPengujian} (${qty} Sampel @ Rp ${formatRpNumber(harga)})`);
+          }
         } else {
-          subtotalText.innerText = 'Rp 0,00';
+          if(subtotalText) subtotalText.innerText = 'Rp 0,00';
         }
       });
 
       const inputJumlah = document.getElementById('jumlahUang');
       const inputKeperluan = document.getElementById('keperluan');
+      const inputTerbilang = document.getElementById('terbilang');
       
       if (grandTotal > 0 || rincianKeperluan.length > 0) {
-        inputJumlah.value = formatRpNumber(grandTotal);
-        formatRupiah(inputJumlah); // Jalankan konversi ke terbilang
-        
-        inputKeperluan.value = rincianKeperluan.join(', ');
+        if(inputJumlah) inputJumlah.value = formatRpNumber(grandTotal);
+        if(inputKeperluan) inputKeperluan.value = rincianKeperluan.join(', ');
+        if(inputTerbilang) {
+           let textT = grandTotal > 0 ? "# " + convertTerbilang(grandTotal).trim() + " Rupiah #" : "";
+           inputTerbilang.value = textT.replace(/\s+/g, ' ').toUpperCase();
+        }
       } else {
-        inputJumlah.value = '';
-        document.getElementById('terbilang').value = '';
-        inputKeperluan.value = '';
+        if(inputJumlah) inputJumlah.value = '';
+        if(inputTerbilang) inputTerbilang.value = '';
+        if(inputKeperluan) inputKeperluan.value = '';
       }
     }
 
@@ -739,13 +744,11 @@
 
             setTanggalHariIni(); updateGeneratedId();
             
-            // Database ninda Bendahara mattu Background settings sweekarisidaga
             if (result.pengaturan) {
               document.getElementById('settingNamaTtd').value = result.pengaturan.nama;
               document.getElementById('settingNipTtd').value = result.pengaturan.nip;
               updateTtdUI();
 
-              // Google Drive ninda Background load madi
               currentBgUrl = result.pengaturan.bgUrl;
               if(currentBgUrl && currentBgUrl !== "") {
                 applyBlankoBackground(currentBgUrl);
@@ -879,6 +882,40 @@
         document.getElementById('loading-overlay').style.display = 'none';
         document.getElementById('loading-text').innerText = "Menyinkronkan Database...";
       });
+    }
+
+    // FUNGSI INI TELAH DIPERBAIKI UNTUK MENGHINDARI ERROR KONVERSI JIKA KOSONG (ANTI GAGAL)
+    function formatRupiah(obj) {
+      if(!obj) return;
+      let angkaStr = obj.value.replace(/[^,\d]/g, '');
+      let split = angkaStr.split(','); 
+      let sisa = split[0].length % 3;
+      let rupiah = split[0].substr(0, sisa); 
+      let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+      if (ribuan) { let separator = sisa ? '.' : ''; rupiah += separator + ribuan.join('.'); }
+      
+      obj.value = split[1] !== undefined ? rupiah + ',' + split[1].substring(0, 2) : rupiah;
+      
+      let numericValue = parseInt(split[0]) || 0;
+      let inputTerbilang = document.getElementById('terbilang');
+      if (inputTerbilang) {
+        let textT = numericValue > 0 ? "# " + convertTerbilang(numericValue).trim() + " Rupiah #" : "";
+        inputTerbilang.value = textT.replace(/\s+/g, ' ').toUpperCase();
+      }
+    }
+
+    function convertTerbilang(angka) {
+      const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+      let temp = "";
+      if (angka < 12) temp = " " + bilangan[angka];
+      else if (angka < 20) temp = convertTerbilang(angka - 10) + " Belas";
+      else if (angka < 100) temp = convertTerbilang(Math.floor(angka / 10)) + " Puluh" + convertTerbilang(angka % 10);
+      else if (angka < 200) temp = " Seratus" + convertTerbilang(angka - 100);
+      else if (angka < 1000) temp = convertTerbilang(Math.floor(angka / 100)) + " Ratus" + convertTerbilang(angka % 100);
+      else if (angka < 2000) temp = " Seribu" + convertTerbilang(angka - 1000);
+      else if (angka < 1000000) temp = convertTerbilang(Math.floor(angka / 1000)) + " Ribu" + convertTerbilang(angka % 1000);
+      else if (angka < 1000000000) temp = convertTerbilang(Math.floor(angka / 1000000)) + " Juta" + convertTerbilang(angka % 1000000);
+      return temp;
     }
 
     function formatTglIndo(dateVal) {
