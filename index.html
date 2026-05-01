@@ -475,10 +475,6 @@
   </div>
 
   <script>
-    // =========================================================================
-    // WAJIB DIISI SEBELUM DEPLOY KE VERCEL
-    // Masukkan URL Web App Google Apps Script Anda pada variabel API_URL di bawah ini
-    // =========================================================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwoypR-32yY4TLXbXt29E7_Y5-dAPWsCbcCzwi-7tleqTuFkS7vFapU4yqDhPEan5LW/exec";
 
     // --- State Management ---
@@ -530,7 +526,6 @@
       }
     }
 
-    // --- Format Rupiah Global function ---
     function formatRpNumber(angka) {
       let number_string = angka.toString().replace(/[^,\d]/g, '');
       let split = number_string.split(',');
@@ -542,7 +537,6 @@
       return rupiah + ',' + desimal;
     }
 
-    // --- KERANJANG PENGUJIAN DINAMIS ---
     const daftarProduk = [
       { grup: "Daftar Mix Formula (DMF)", isUji: false, items: [
         { nama: "DMF LPA KELAS A", harga: 2935000 },
@@ -602,7 +596,6 @@
       kalkulasiTotalPengujian();
     }
 
-    // FUNGSI INI TELAH DIPERBAIKI UNTUK MENGHINDARI ERROR SAAT KONVERSI ANGKA (ANTI GAGAL)
     function kalkulasiTotalPengujian() {
       const rows = document.querySelectorAll('.pengujian-row');
       let grandTotal = 0;
@@ -810,7 +803,7 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           pendingBgBase64 = e.target.result;
-          applyBlankoBackground(e.target.result); // Tampilkan pratinjau langsung
+          applyBlankoBackground(e.target.result); 
         };
         reader.readAsDataURL(file);
       }
@@ -884,7 +877,6 @@
       });
     }
 
-    // FUNGSI INI TELAH DIPERBAIKI UNTUK MENGHINDARI ERROR KONVERSI JIKA KOSONG (ANTI GAGAL)
     function formatRupiah(obj) {
       if(!obj) return;
       let angkaStr = obj.value.replace(/[^,\d]/g, '');
@@ -909,13 +901,13 @@
       let temp = "";
       if (angka < 12) temp = " " + bilangan[angka];
       else if (angka < 20) temp = convertTerbilang(angka - 10) + " Belas";
-      else if (angka < 100) temp = convertTerbilang(Math.floor(angka / 10)) + " Puluh" + convertTerbilang(angka % 10);
-      else if (angka < 200) temp = " Seratus" + convertTerbilang(angka - 100);
-      else if (angka < 1000) temp = convertTerbilang(Math.floor(angka / 100)) + " Ratus" + convertTerbilang(angka % 100);
-      else if (angka < 2000) temp = " Seribu" + convertTerbilang(angka - 1000);
-      else if (angka < 1000000) temp = convertTerbilang(Math.floor(angka / 1000)) + " Ribu" + convertTerbilang(angka % 1000);
-      else if (angka < 1000000000) temp = convertTerbilang(Math.floor(angka / 1000000)) + " Juta" + convertTerbilang(angka % 1000000);
-      return temp;
+      else if (angka < 100) temp = convertTerbilang(Math.floor(angka / 10)) + " Puluh " + convertTerbilang(angka % 10);
+      else if (angka < 200) temp = " Seratus " + convertTerbilang(angka - 100);
+      else if (angka < 1000) temp = convertTerbilang(Math.floor(angka / 100)) + " Ratus " + convertTerbilang(angka % 100);
+      else if (angka < 2000) temp = " Seribu " + convertTerbilang(angka - 1000);
+      else if (angka < 1000000) temp = convertTerbilang(Math.floor(angka / 1000)) + " Ribu " + convertTerbilang(angka % 1000);
+      else if (angka < 1000000000) temp = convertTerbilang(Math.floor(angka / 1000000)) + " Juta " + convertTerbilang(angka % 1000000);
+      return temp.trim();
     }
 
     function formatTglIndo(dateVal) {
@@ -1248,11 +1240,11 @@
       const fBulan = document.getElementById('filterBulan').value;
       const fTahun = document.getElementById('filterTahun').value;
 
-      let filtered = [...dbKuitansi].reverse(); // Urutan dari terlama ke terbaru
+      let filtered = [...dbKuitansi].reverse();
 
       if (fTahun !== 'ALL') {
         filtered = filtered.filter(item => {
-          const parts = item.tglBiasa.split('/'); // Asumsi format DD/MM/YYYY
+          const parts = item.tglBiasa.split('/'); 
           return parts[2] === fTahun;
         });
       }
@@ -1264,7 +1256,6 @@
         });
       }
 
-      // Update Teks Judul Cetak Laporan
       let teksPeriode = "TAHUN " + (fTahun === 'ALL' ? "KESELURUHAN" : fTahun);
       if (fBulan !== 'ALL') {
         const selBulan = document.getElementById('filterBulan');
