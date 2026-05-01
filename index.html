@@ -154,13 +154,14 @@
             <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 relative">
               <div class="absolute top-0 right-0 mt-3 mr-4 text-indigo-300 text-xs font-bold uppercase"># Nomor</div>
               <label class="block text-sm font-bold text-indigo-900 mb-2">No. Kuitansi <span class="text-red-500">*</span></label>
-              <input type="text" id="noKuitansi" required class="w-full bg-white border border-indigo-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-extrabold text-indigo-700 shadow-sm" placeholder="Contoh: 003">
-              <p class="text-xs text-indigo-500 mt-2 font-medium">Bisa diubah manual (Otomatis +1).</p>
+              <input type="text" id="noKuitansi" required class="w-full bg-white border border-indigo-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-extrabold text-indigo-700 shadow-sm" placeholder="Contoh: 001/KWT/LBK/2026">
+              <p class="text-xs text-indigo-500 mt-2 font-medium">Bisa diubah manual (Otomatis +1 sesuai tahun).</p>
             </div>
             <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 relative">
               <div class="absolute top-0 right-0 mt-3 mr-4 text-indigo-300 text-xs font-bold uppercase">📅 Tanggal</div>
               <label class="block text-sm font-bold text-indigo-900 mb-2">Tanggal Cetak <span class="text-red-500">*</span></label>
-              <input type="date" id="tanggalKuitansi" required class="w-full bg-white border border-indigo-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-700 shadow-sm">
+              <!-- Tambahkan onchange agar Nomor Kuitansi update jika tahun tanggal berubah -->
+              <input type="date" id="tanggalKuitansi" onchange="updateGeneratedId()" required class="w-full bg-white border border-indigo-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-700 shadow-sm">
               <p class="text-xs text-indigo-500 mt-2 font-medium">Tanggal ini yang akan tercetak.</p>
             </div>
           </div>
@@ -623,6 +624,7 @@
           const selectedOption = select.options[select.selectedIndex];
           const namaPengujian = selectedOption.getAttribute('data-nama');
           
+          // Menambahkan harga @ satuan di dalam kurung tanpa kata UJI
           rincianKeperluan.push(`${namaPengujian} (${qty} Sampel @ Rp ${formatRpNumber(harga)})`);
         } else {
           subtotalText.innerText = 'Rp 0,00';
@@ -634,7 +636,8 @@
       
       if (grandTotal > 0 || rincianKeperluan.length > 0) {
         inputJumlah.value = formatRpNumber(grandTotal);
-        formatRupiah(inputJumlah);
+        formatRupiah(inputJumlah); // Jalankan konversi ke terbilang
+        
         inputKeperluan.value = rincianKeperluan.join(', ');
       } else {
         inputJumlah.value = '';
@@ -663,8 +666,26 @@
     }
 
     function updateGeneratedId() {
-      const nextNum = dbKuitansi.length + 1;
-      document.getElementById('noKuitansi').value = nextNum.toString().padStart(3, '0');
+      const tglInput = document.getElementById('tanggalKuitansi').value;
+      let currentYear = new Date().getFullYear().toString();
+      
+      if (tglInput) {
+        currentYear = tglInput.split('-')[0]; // Ambil tahun dari input YYYY-MM-DD
+      }
+
+      // Hitung jumlah kuitansi di database untuk tahun yang relevan
+      const kuitansiTahunIni = dbKuitansi.filter(item => {
+        if (item.tglBiasa) {
+          return item.tglBiasa.endsWith('/' + currentYear);
+        }
+        return false;
+      });
+
+      const nextNum = kuitansiTahunIni.length + 1;
+      const formattedNum = nextNum.toString().padStart(3, '0');
+      
+      // Format 001/KWT/LBK/2026
+      document.getElementById('noKuitansi').value = `${formattedNum}/KWT/LBK/${currentYear}`;
     }
 
     // --- Inisialisasi ---
@@ -864,35 +885,6 @@
       });
     }
 
-    function formatRupiah(obj) {
-      let angka = obj.value.replace(/[^,\d]/g, '').toString();
-      let split = angka.split(','); 
-      let sisa = split[0].length % 3;
-      let rupiah = split[0].substr(0, sisa); 
-      let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
-      if (ribuan) { let separator = sisa ? '.' : ''; rupiah += separator + ribuan.join('.'); }
-      
-      obj.value = split[1] !== undefined ? rupiah + ',' + split[1].substring(0, 2) : rupiah;
-      
-      let numericValue = parseInt(split[0].replace(/[^0-9]/g, ''));
-      let textTerbilang = numericValue ? "# " + convertTerbilang(numericValue) + " Rupiah #" : "";
-      document.getElementById('terbilang').value = textTerbilang.replace(/\s+/g, ' ');
-    }
-
-    function convertTerbilang(angka) {
-      const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
-      let temp = "";
-      if (angka < 12) temp = " " + bilangan[angka];
-      else if (angka < 20) temp = convertTerbilang(angka - 10) + " Belas";
-      else if (angka < 100) temp = convertTerbilang(Math.floor(angka / 10)) + " Puluh" + convertTerbilang(angka % 10);
-      else if (angka < 200) temp = " Seratus" + convertTerbilang(angka - 100);
-      else if (angka < 1000) temp = convertTerbilang(Math.floor(angka / 100)) + " Ratus" + convertTerbilang(angka % 100);
-      else if (angka < 2000) temp = " Seribu" + convertTerbilang(angka - 1000);
-      else if (angka < 1000000) temp = convertTerbilang(Math.floor(angka / 1000)) + " Ribu" + convertTerbilang(angka % 1000);
-      else if (angka < 1000000000) temp = convertTerbilang(Math.floor(angka / 1000000)) + " Juta" + convertTerbilang(angka % 1000000);
-      return temp.trim();
-    }
-
     function formatTglIndo(dateVal) {
       if(!dateVal) return '';
       const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -1040,8 +1032,8 @@
     }
 
     function isiLayoutKuitansi(data) {
+      // Tidak lagi memotong ID berdasarkan '-', membiarkan ID lengkap 001/KWT/LBK/2026
       let displayId = data.id;
-      if (displayId && displayId.includes('-')) displayId = displayId.split('-')[2];
         
       document.getElementById('valId').innerText = displayId || '...'; 
       document.getElementById('valTgl').innerText = data.tglBiasa;
