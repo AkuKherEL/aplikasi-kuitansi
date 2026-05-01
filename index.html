@@ -69,13 +69,19 @@
     }
   </style>
 </head>
-<body class="text-slate-800 min-h-screen" style="background-color: #f8fafc; background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px); background-size: 24px 24px;">
+<body class="bg-slate-50 text-slate-800 min-h-screen">
 
   <!-- ================= LAYAR LOGIN ================= -->
-  <div id="login-screen" class="fixed inset-0 flex items-center justify-center z-[100] relative overflow-hidden" style="background-color: #0f172a; background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 32px 32px;">
+  <div id="login-screen" class="fixed inset-0 flex items-center justify-center z-[100] bg-slate-900 overflow-hidden">
     
-    <!-- Efek Kedalaman (Vignette) Latar Belakang -->
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#0f172a_100%)] z-0"></div>
+    <!-- Gambar Latar Belakang (Menggunakan Tag IMG agar lebih kebal error) -->
+    <img src="https://image.thum.io/get/width/1920/crop/1080/noanimate/https://labkons.ganotek.com/" 
+         class="absolute inset-0 w-full h-full object-cover opacity-40 z-0" 
+         alt="Background Web Labkons" 
+         onerror="this.src='https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=2071&auto=format&fit=crop'">
+    
+    <!-- Overlay Gelap dengan Blur -->
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] z-10"></div>
     
     <div class="bg-white p-8 md:p-10 rounded-[2rem] shadow-2xl w-full max-w-md border border-white/50 relative overflow-hidden mx-4 z-20">
         <!-- Dekorasi Background Login -->
