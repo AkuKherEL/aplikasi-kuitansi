@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Kuitansi Retribusi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* --- VIEW TOGGLES --- */
+    #view-laporan, #view-pengaturan { display: none; }
+    #print-laporan, #app-print { display: none; }
+    
+    /* Loading Spinner */
+    #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
+    .loader { border: 4px solid #f3f4f6; border-top: 4px solid #4f46e5; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* --- STYLING PREVIEW KUITANSI --- */
+    #app-print.show-preview {
+      display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(15, 23, 42, 0.95); z-index: 100;
+      flex-direction: column; align-items: center; justify-content: flex-start;
+      overflow-y: auto; padding: 20px;
+    }
+
+    .kuitansi-kertas {
+      font-family: "Times New Roman", Times, serif;
+      width: 210mm; height: 160mm; background-color: #fff;
+      position: relative; color: #000; box-sizing: border-box;
+      margin: 0 auto; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      flex-shrink: 0; overflow: hidden;
+    }
+
+    .data-item {
+      position: absolute; font-family: "Times New Roman", Times, serif;
+      font-weight: bold; font-size: 15px; color: #000; z-index: 20; white-space: nowrap;
+    }
+
+    /* Switch Toggle UI */
+    .toggle-checkbox:checked { right: 0; border-color: #4ade80; }
+    .toggle-checkbox:checked + .toggle-label { background-color: #4ade80; }
+
+    /* =========================================================
+       MODE CETAK BERSIH (HANYA TEKS, NO BACKGROUND, NO SCROLLBAR)
+       ========================================================= */
+    @media print {
+      html, body { background-color: transparent !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+      #app-wrapper, #view-input, #view-laporan, #view-pengaturan { display: none !important; }
+      
+      /* Print Kuitansi (Blangko) */
+      body.print-kuitansi #app-print { display: block !important; position: absolute !important; top: 0 !important; left: 0 !important; width: 210mm !important; height: 160mm !important; background: transparent !important; padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
+      body.print-kuitansi .kuitansi-kertas { box-shadow: none !important; margin: 0 !important; padding: 0 !important; border: none !important; background: transparent !important; width: 210mm !important; height: 160mm !important; overflow: hidden !important; position: absolute !important; top: 0 !important; left: 0 !important; }
+      body.print-kuitansi .cetak-hide, body.print-kuitansi #bg-blanko { display: none !important; }
+      body.print-kuitansi .data-item { outline: none !important; background: transparent !important; color: #000 !important; border-right: none !important; padding-right: 0 !important; }
+
+      /* Print Laporan Buku Besar */
+      body.print-laporan #print-laporan { display: block !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
+
+  <div id="loading-overlay">
+    <div class="loader"></div>
+    <p class="mt-4 font-extrabold text-indigo-700 tracking-wide" id="loading-text">Menyinkronkan Database...</p>
+  </div>
+
+  <div id="app-wrapper" class="max-w-5xl mx-auto space-y-6">
+    
+    <!-- HEADER & NAV (MODERN DASHBOARD) -->
+    <div class="bg-gradient-to-br from-indigo-800 via-blue-700 to-indigo-900 text-white rounded-3xl shadow-xl overflow-hidden relative">
+      <div class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-400 opacity-10 rounded-full blur-2xl"></div>
+
+      <div class="p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between relative z-10 gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold tracking-wider mb-3 uppercase shadow-sm border border-white/10">
+            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> REST API Connected
+          </div>
+          <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">Sistem Kuitansi BLUD</h1>
+          <p class="text-indigo-100 text-sm md:text-base opacity-90">Kelola penerimaan retribusi pengujian laboratorium dengan presisi.</p>
+        </div>
+      </div>
+      
+      <!-- Modern Tabs -->
+      <div class="bg-indigo-950/40 backdrop-blur-md p-2 mx-4 mb-4 rounded-2xl flex flex-wrap sm:flex-nowrap gap-1 relative z-10">
+        <button onclick="switchTab('input')" id="tab-input" class="flex-1 py-3 text-center rounded-xl transition-all font-bold text-sm bg-white text-indigo-800 shadow-md">
+          📝 Input & Keranjang
+        </button>
+        <button onclick="switchTab('laporan')" id="tab-laporan" class="flex-1 py-3 text-center rounded-xl transition-all font-bold text-sm text-indigo-100 hover:bg-white/10 hover:text-white">
+          📊 Buku Besar
+        </button>
+        <button onclick="switchTab('pengaturan')" id="tab-pengaturan" class="flex-1 py-3 text-center rounded-xl transition-all font-bold text-sm text-indigo-100 hover:bg-white/10 hover:text-white">
+          ⚙️ Kalibrasi Blangko
+        </button>
+      </div>
+    </div>
+
+    <!-- WRAPPER VIEW INPUT -->
+    <div id="view-input" class="space-y-6">
+      
+      <!-- QUICK STATS WIDGETS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 hover:shadow-md transition">
+          <div class="p-4 bg-indigo-50 text-indigo-600 rounded-2xl">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Kuitansi</p>
+            <h3 class="text-2xl font-extrabold text-slate-800 mt-1" id="statTotalKuitansi">0</h3>
+          </div>
+        </div>
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 hover:shadow-md transition">
+          <div class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Penerimaan</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-slate-800 mt-1" id="statTotalPenerimaan">Rp 0</h3>
+          </div>
+        </div>
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 hover:shadow-md transition hidden lg:flex">
+          <div class="p-4 bg-amber-50 text-amber-600 rounded-2xl">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tahun Berjalan</p>
+            <h3 class="text-2xl font-extrabold text-slate-800 mt-1" id="statTahunSekarang">2026</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN FORM CARD -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-10">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="h-8 w-2 bg-indigo-600 rounded-full"></div>
+          <h2 class="text-2xl font-extrabold text-slate-800">Buat Kuitansi Baru</h2>
+        </div>
+        
+        <form id="kuitansiForm" class="space-y-7">
+          
+          <!-- NO KUITANSI & TANGGAL -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+            <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 relative">
+              <div class="absolute top-0 right-0 mt-3 mr-4 text-indigo-300 text-xs font-bold uppercase"># Nomor</div>
+              <label class="block text-sm font-bold text-indigo-900 mb-2">No. Kuitansi <span class="text-red-500">*</span></label>
+              <input type="text" id="noKuitansi" required class="w-full bg-white border border-indigo-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-extrabold text-indigo-700 shadow-sm" placeholder="Contoh: 003">
+              <p class="text-xs text-indigo-500 mt-2 font-medium">Bisa diubah manual (Otomatis +1).</p>
+            </div>
+            <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 relative">
+              <div class="absolute top-0 right-0 mt-3 mr-4 text-indigo-300 text-xs font-bold uppercase">📅 Tanggal</div>
+              <label class="block text-sm font-bold text-indigo-900 mb-2">Tanggal Cetak <span class="text-red-500">*</span></label>
+              <input type="date" id="tanggalKuitansi" required class="w-full bg-white border border-indigo-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-700 shadow-sm">
+              <p class="text-xs text-indigo-500 mt-2 font-medium">Tanggal ini yang akan tercetak.</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Nama Wajib Retribusi <span class="text-red-500">*</span></label>
+            <input type="text" id="nama" required class="w-full bg-white border border-slate-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium placeholder-slate-400 text-slate-800 shadow-sm" placeholder="Contoh: CV. Bangun Persada...">
+          </div>
+
+          <!-- DROPDOWN PILIHAN PRODUK PENGUJIAN -->
+          <div class="bg-gradient-to-br from-indigo-50/50 to-blue-50/50 border border-indigo-100 p-6 rounded-2xl shadow-sm">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+              <div>
+                <label class="block text-base font-extrabold text-indigo-900">🛍️ Keranjang Pengujian</label>
+                <p class="text-xs text-indigo-600/80 font-medium mt-1">Pilih layanan, uang dan terbilang akan dihitung otomatis.</p>
+              </div>
+              <button type="button" onclick="tambahBarisPengujian()" class="bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-xs font-bold py-2 px-4 rounded-xl shadow-sm transition-all flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg> Tambah Layanan
+              </button>
+            </div>
+            
+            <div id="containerPengujian" class="space-y-3"></div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+              <label class="block text-sm font-bold text-slate-700 mb-2">Jumlah Uang (Rp) <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <span class="absolute left-5 top-3.5 font-bold text-slate-400">Rp</span>
+                <input type="text" id="jumlahUang" required class="w-full bg-white border border-slate-200 pl-14 pr-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-extrabold text-xl text-indigo-700 shadow-sm" placeholder="0,00" oninput="formatRupiah(this)">
+              </div>
+            </div>
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+              <label class="block text-sm font-bold text-slate-700 mb-2">Terbilang (Otomatis)</label>
+              <textarea id="terbilang" rows="2" readonly class="w-full bg-white border border-slate-200 px-5 py-3 rounded-xl text-sm focus:outline-none resize-none font-bold italic text-slate-500 shadow-sm leading-relaxed uppercase" placeholder="# OTOMATIS MENGISI #"></textarea>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Keperluan Pembayaran <span class="text-red-500">*</span></label>
+            <div class="flex shadow-sm rounded-xl">
+              <span class="bg-slate-100 border border-slate-200 border-r-0 px-5 py-3.5 rounded-l-xl text-sm font-bold text-slate-500 whitespace-nowrap">Hasil Pengujian</span>
+              <input type="text" id="keperluan" class="w-full bg-white border border-slate-200 px-5 py-3.5 rounded-r-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold text-slate-700" placeholder="Diisi otomatis jika memilih dari keranjang di atas...">
+            </div>
+          </div>
+          
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Berdasarkan Surat Permintaan No.</label>
+            <input type="text" id="noSurat" class="w-full bg-white border border-slate-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-700 shadow-sm" placeholder="Contoh: 001/SP/2026 (Opsional)">
+          </div>
+
+          <div class="flex flex-wrap items-center gap-4 pt-6 border-t border-slate-100">
+            <button type="button" onclick="previewForm()" class="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-amber-950 font-extrabold py-3.5 px-8 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+              Preview & Cetak
+            </button>
+            <button type="button" onclick="simpanLangsung()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 px-8 rounded-xl transition-all shadow-sm flex items-center gap-2">
+              💾 Simpan Data Saja
+            </button>
+            <div class="flex-grow"></div>
+            <button type="button" onclick="resetForm()" class="bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 font-bold py-3 px-6 rounded-xl transition-all shadow-sm">
+              Kosongkan Form
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- HISTORY SECTION -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="h-6 w-2 bg-slate-300 rounded-full"></div>
+          <h2 class="text-xl font-bold text-slate-800">Riwayat Terakhir</h2>
+        </div>
+        
+        <div class="overflow-x-auto rounded-2xl border border-slate-100">
+          <table class="w-full text-sm text-left">
+            <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th class="px-5 py-4 tracking-wider">ID / Tanggal</th>
+                <th class="px-5 py-4 tracking-wider">Nama & Keperluan</th>
+                <th class="px-5 py-4 tracking-wider">Jumlah (Rp)</th>
+                <th class="px-5 py-4 tracking-wider text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+          <div id="emptyState" class="text-center py-12 text-slate-400 font-medium hidden">Belum ada riwayat kuitansi yang tersimpan.</div>
+        </div>
+      </div>
+    </div> 
+
+    <!-- WRAPPER VIEW LAPORAN BUKU BESAR -->
+    <div id="view-laporan" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-10">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-6 mb-6 gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-800">Buku Besar Penerimaan</h2>
+          <p class="text-slate-500 text-sm mt-1">Laporan rekapitulasi seluruh retribusi.</p>
+        </div>
+        <button onclick="cetakBukuBesar()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg> Cetak Laporan
+        </button>
+      </div>
+      <div class="overflow-x-auto rounded-2xl border border-slate-200">
+        <table class="w-full text-sm text-left">
+          <thead class="text-xs text-slate-600 uppercase bg-slate-100 border-b border-slate-200">
+            <tr>
+              <th class="px-4 py-4 border-r border-slate-200 text-center w-12">No</th>
+              <th class="px-4 py-4 border-r border-slate-200">Tanggal</th>
+              <th class="px-4 py-4 border-r border-slate-200">No. Kuitansi</th>
+              <th class="px-4 py-4 border-r border-slate-200">Uraian / Penyetor</th>
+              <th class="px-4 py-4 border-r border-slate-200 text-right">Penerimaan (Rp)</th>
+              <th class="px-4 py-4 text-right">Saldo (Rp)</th>
+            </tr>
+          </thead>
+          <tbody id="tableBukuBesar" class="divide-y divide-slate-200"></tbody>
+          <tfoot class="bg-slate-50 font-extrabold text-slate-800 border-t-2 border-slate-300">
+            <tr>
+              <td colspan="4" class="px-4 py-5 text-right border-r border-slate-300 uppercase tracking-wide">TOTAL PENERIMAAN</td>
+              <td id="totalPenerimaan" class="px-4 py-5 text-right border-r border-slate-300 text-indigo-700 text-lg">0</td>
+              <td id="totalSaldo" class="px-4 py-5 text-right text-emerald-600 text-lg">0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div> 
+
+    <!-- WRAPPER VIEW PENGATURAN -->
+    <div id="view-pengaturan" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-10">
+      <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-6">
+        <div class="p-3 bg-slate-100 rounded-xl text-slate-600">⚙️</div>
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-800">Kalibrasi & Penandatangan</h2>
+          <p class="text-slate-500 text-sm mt-1">Atur background kertas fisik dan identitas bendahara.</p>
+        </div>
+      </div>
+      
+      <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-6 rounded-2xl mb-8 flex gap-4">
+        <div class="text-2xl mt-1">💡</div>
+        <p class="text-sm text-amber-800 font-medium leading-relaxed">
+          Unggah foto/scan kertas blangko Anda (jpg/png) untuk dijadikan *background* saat "Preview Presisi". Gunakan fitur **Drag & Drop** pada layar preview untuk menyesuaikan jatuhnya teks. Background ini <b>otomatis akan hilang</b> saat dicetak menggunakan printer sungguhan.
+        </p>
+      </div>
+      
+      <div class="mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200 border-dashed">
+        <label class="block text-sm font-bold text-slate-700 mb-3">Unggah Scan/Foto Kertas Blangko Kosong</label>
+        <input type="file" id="uploadBlanko" accept="image/*" onchange="handleUploadBlanko(event)" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition cursor-pointer">
+      </div>
+      
+      <div class="flex flex-wrap gap-3 items-center">
+        <button onclick="hapusBlanko()" class="bg-rose-50 border border-rose-200 text-rose-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-rose-100 transition shadow-sm">🗑️ Hapus Background</button>
+        <button onclick="resetCoordsDefault()" class="bg-white border border-slate-300 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition shadow-sm">🔄 Reset Posisi Teks Default</button>
+      </div>
+
+      <!-- PENGATURAN TANDA TANGAN -->
+      <div class="mt-10 pt-8 border-t border-slate-100">
+        <h3 class="text-lg font-bold mb-5 flex items-center gap-2 text-slate-800">✍️ Data Bendahara Penerimaan</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Nama Bendahara</label>
+            <input type="text" id="settingNamaTtd" oninput="simpanPengaturanTtd()" class="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold" placeholder="Contoh: Budi Santoso, S.T.">
+          </div>
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <label class="block text-sm font-bold text-slate-700 mb-2">NIP</label>
+            <input type="text" id="settingNipTtd" oninput="simpanPengaturanTtd()" class="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold tracking-wide" placeholder="Contoh: 19800101 200501 1 001">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PREVIEW & PRINT LAYOUTS ================= -->
+
+  <!-- PRINT LAPORAN BUKU BESAR -->
+  <div id="print-laporan" class="w-full font-serif text-black bg-white">
+    <!-- KOP SURAT DENGAN LOGO -->
+    <div class="flex items-center mb-4 border-b-4 border-double border-black pb-4 font-sans">
+      <div class="w-20 sm:w-24 flex-shrink-0">
+        <img src="https://disdagprovkalsel.com/img/logo_disdagprovkalsel.png" alt="Logo Pemprov Kalsel" class="w-full h-auto object-contain">
+      </div>
+      <div class="flex-grow text-center px-2">
+        <h3 class="text-lg font-bold leading-tight whitespace-nowrap">PEMERINTAH PROVINSI KALIMANTAN SELATAN</h3>
+        <h2 class="text-xl font-bold leading-tight whitespace-nowrap">DINAS PEKERJAAN UMUM DAN PENATAAN RUANG</h2>
+        <h2 class="text-xl font-bold leading-tight whitespace-nowrap">BLUD. LABORATORIUM BAHAN KONSTRUKSI</h2>
+        <p class="text-xs font-bold mt-1 whitespace-nowrap">Jl. Yos Sudarso No. 35 Telp. (0511) 4423377 WA. 0856 5196 1596 Banjarmasin 70119</p>
+        <p class="text-xs font-bold whitespace-nowrap">Email : laboratoriumpuprov.kalsel@yahoo.com Website : www.labkons.dinaspupr.kalselprov.go.id</p>
+      </div>
+      <div class="w-20 sm:w-24 flex-shrink-0"></div>
+    </div>
+    
+    <div class="text-center mb-6">
+      <h4 class="text-lg font-bold">BUKU BESAR PENERIMAAN RETRIBUSI TAHUN <span id="tahunLaporan">2026</span></h4>
+    </div>
+    
+    <table class="w-full text-sm text-left border-collapse border border-black">
+      <thead class="text-xs uppercase bg-gray-100">
+        <tr>
+          <th class="px-3 py-2 border border-black text-center w-10">No</th>
+          <th class="px-3 py-2 border border-black text-center w-24">Tanggal</th>
+          <th class="px-3 py-2 border border-black text-center">No. Kuitansi</th>
+          <th class="px-3 py-2 border border-black text-center">Uraian / Penyetor</th>
+          <th class="px-3 py-2 border border-black text-center w-32">Penerimaan (Rp)</th>
+          <th class="px-3 py-2 border border-black text-center w-32">Saldo (Rp)</th>
+        </tr>
+      </thead>
+      <tbody id="printTableBukuBesar"></tbody>
+      <tfoot class="font-bold bg-gray-100">
+        <tr>
+          <td colspan="4" class="px-3 py-2 border border-black text-right">TOTAL PENERIMAAN</td>
+          <td id="printTotalPenerimaan" class="px-3 py-2 border border-black text-right">0</td>
+          <td id="printTotalSaldo" class="px-3 py-2 border border-black text-right">0</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- KOTAK TANDA TANGAN LAPORAN -->
+    <div class="mt-12 flex justify-end">
+      <div class="text-center min-w-[16rem]">
+        <p class="whitespace-nowrap">Banjarmasin, <span id="tglPrintLaporan"></span></p>
+        <p class="whitespace-nowrap">Bendahara Penerimaan BLUD</p>
+        <div class="h-20"></div>
+        <p class="font-bold underline whitespace-nowrap" id="lapTtdNama">......................................................</p>
+        <p class="whitespace-nowrap">NIP. <span id="lapTtdNip">............................................</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREVIEW & CETAK KUITANSI BLANGKO -->
+  <div id="app-print">
+    <div class="no-print flex flex-col gap-4 mb-4 w-[210mm]">
+      <div class="bg-slate-800 border border-slate-700 text-slate-100 p-5 rounded-2xl shadow-2xl flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-lg text-emerald-400 flex items-center gap-2">🌟 Mode Kalibrasi (Drag & Drop)</h3>
+          <p class="text-xs text-slate-300 mt-2 font-medium leading-relaxed">1. <b>Klik teks & gunakan Panah (⬆️⬇️⬅️➡️)</b> untuk geser persis milimeter.<br>2. <b>Tarik ujung kanan kotak</b> untuk melebarkan pembungkus teks.<br>3. <b>Scroll mouse di atas teks</b> untuk membesarkan/mengecilkan huruf.</p>
+        </div>
+        <div class="relative inline-block w-14 mr-2 align-middle select-none ml-4">
+            <input type="checkbox" id="toggleDragMode" onchange="toggleDrag()" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"/>
+            <label for="toggleDragMode" class="toggle-label block overflow-hidden h-7 rounded-full bg-slate-600 cursor-pointer transition-all duration-300"></label>
+        </div>
+      </div>
+      <div class="flex gap-4 mt-2">
+        <button onclick="tutupPreview()" class="bg-white text-slate-700 px-6 py-3 rounded-xl font-bold shadow hover:bg-slate-50 transition border border-slate-200 flex items-center gap-2">⬅️ Tutup Preview</button>
+        <div class="flex-grow"></div>
+        <button id="btnPreviewAction" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-extrabold shadow-lg hover:shadow-xl hover:bg-blue-700 transition flex items-center gap-2 text-lg transform hover:-translate-y-0.5">🖨️ Cetak ke Blangko</button>
+      </div>
+    </div>
+    
+    <div class="kuitansi-kertas relative" style="width: 210mm; height: 160mm; overflow: hidden; padding: 0;">
+      <div id="bg-blanko" class="cetak-hide absolute inset-0 z-0 bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300" style="background-size: 100% 100%; background-position: center; background-repeat: no-repeat;">
+        <div class="text-center p-6 bg-white/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200">
+          <div class="text-3xl mb-2">📸</div>
+          <p class="text-slate-500 font-bold mb-1">Background Blanko Kosong</p>
+          <p class="text-xs text-slate-400">Unggah foto blangko di menu "Kalibrasi"</p>
+        </div>
+      </div>
+
+      <div class="data-item" id="valId" style="font-size: 16px;"></div>
+      <div class="data-item" id="valTgl" style="font-size: 16px;"></div>
+      <div class="data-item" id="valNama" style="width: 130mm; text-transform: uppercase; font-size: 16px;"></div>
+      
+      <div class="data-item" id="valTerbilang" style="width: 130mm; line-height: 6mm; word-wrap: break-word; white-space: normal; font-style: italic; text-transform: uppercase; text-align: justify; font-size: 14px;"></div>
+      <div class="data-item" id="valKeperluan" style="width: 130mm; line-height: 6mm; white-space: normal; word-wrap: break-word; text-indent: 28mm; text-align: justify; font-size: 14px;"></div>
+      <div class="data-item" id="valSurat" style="width: 130mm; line-height: 6mm; white-space: normal; word-wrap: break-word; text-indent: 60mm; text-align: justify; font-size: 14px;"></div>
+      
+      <div class="data-item" id="valRp" style="font-size: 20px;"></div>
+      <div class="data-item" id="valTglHariBulan" style="width: 40mm; text-align: center; font-size: 16px;"></div>
+      <div class="data-item" id="valTglTahun" style="width: 10mm; font-size: 16px;"></div>
+      
+      <div class="data-item" id="valTtdNama" style="min-width: 60mm; white-space: nowrap; text-align: center; font-size: 15px; font-weight: bold; text-decoration: underline;"></div>
+      <div class="data-item" id="valTtdNip" style="min-width: 60mm; white-space: nowrap; text-align: center; font-size: 15px;"></div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // WAJIB DIISI SEBELUM DEPLOY KE VERCEL
+    // Masukkan URL Web App Google Apps Script Anda pada variabel API_URL di bawah ini
+    // =========================================================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbz_MOno6bDczx-Tebonr4Ss6fn-2kuRi2S7j7Mxjbw9xW1EQF2-WQCyl-Q0TXzI41js7A/exec";
+
+    // --- State Management ---
+    let dbKuitansi = [];
+    let currentPreviewData = null; 
+    
+    const defaultCoords = {
+      valId: { top: 20.5, left: 168, fontSize: 16 }, 
+      valTgl: { top: 27.5, left: 168, fontSize: 16 },
+      valNama: { top: 61, left: 72, fontSize: 16 }, 
+      valTerbilang: { top: 78.5, left: 72, fontSize: 14 }, 
+      valKeperluan: { top: 89.5, left: 72, fontSize: 14 },
+      valSurat: { top: 98, left: 72, fontSize: 14 }, 
+      valRp: { top: 115, left: 75, fontSize: 20 },
+      valTglHariBulan: { top: 109.5, left: 153, fontSize: 16 }, 
+      valTglTahun: { top: 109.5, left: 198, fontSize: 16 },
+      valTtdNama: { top: 130, left: 145, fontSize: 15 }, 
+      valTtdNip: { top: 135, left: 145, fontSize: 15 }
+    };
+
+    // --- Format Rupiah Global function ---
+    function formatRpNumber(angka) {
+      let number_string = angka.toString().replace(/[^,\d]/g, '');
+      let split = number_string.split(',');
+      let sisa = split[0].length % 3;
+      let rupiah = split[0].substr(0, sisa);
+      let ribuan = split[0].substr(sisa).match(/\d{3}/g);
+      if (ribuan) { let separator = sisa ? '.' : ''; rupiah += separator + ribuan.join('.'); }
+      let desimal = split[1] !== undefined ? split[1].padEnd(2, '0').substring(0, 2) : '00';
+      return rupiah + ',' + desimal;
+    }
+
+    // --- KERANJANG PENGUJIAN DINAMIS ---
+    const daftarProduk = [
+      { grup: "Daftar Mix Formula (DMF)", isUji: false, items: [
+        { nama: "DMF LPA KELAS A", harga: 2935000 },
+        { nama: "DMF LPA KELAS B", harga: 3035000 },
+        { nama: "DMF LPA KELAS S", harga: 2935000 },
+        { nama: "DMF CTB", harga: 2810000 },
+        { nama: "DMF TIMBUNAN PILIHAN", harga: 2010000 },
+        { nama: "DMF TIMBUNAN BIASA", harga: 1810000 },
+        { nama: "DMF TIMBUNAN (AGREGAT)", harga: 2260000 },
+        { nama: "DMF ASPAL", harga: 5025000 },
+        { nama: "DMF BETON SILINDER", harga: 3550000 },
+        { nama: "DMF BETON KUBUS", harga: 3400000 }
+      ]},
+      { grup: "Pengujian Aspal & Kuat Tekan", isUji: true, items: [
+        { nama: "EKSTRAKSI ASPAL", harga: 770000 },
+        { nama: "DENSITY ASPAL", harga: 85000 },
+        { nama: "KUAT TEKAN COREDRILL", harga: 175000 },
+        { nama: "KUAT TEKAN BETON SILINDER", harga: 135000 },
+        { nama: "KUAT TEKAN BETON KUBUS", harga: 110000 },
+        { nama: "KUAT TEKAN BETON PAVING BLOCK", harga: 110000 }
+      ]}
+    ];
+
+    function tambahBarisPengujian() {
+      const container = document.getElementById('containerPengujian');
+      let optionsHtml = '<option value="">-- Ketik manual, atau pilih dari sini --</option>';
+      daftarProduk.forEach(grup => {
+        optionsHtml += `<optgroup label="${grup.grup}">`;
+        grup.items.forEach(item => {
+          optionsHtml += `<option value="${item.harga}" data-nama="${item.nama}">${item.nama} - Rp ${formatRpNumber(item.harga)}</option>`;
+        });
+        optionsHtml += `</optgroup>`;
+      });
+
+      const row = document.createElement('div');
+      row.className = 'flex gap-3 items-center flex-wrap sm:flex-nowrap pengujian-row bg-white p-3 border border-slate-200 rounded-xl shadow-sm hover:border-indigo-300 transition-colors';
+      row.innerHTML = `
+        <select class="produk-select flex-1 border border-slate-200 px-3 py-2.5 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 bg-slate-50 hover:bg-white transition-colors" onchange="kalkulasiTotalPengujian()">
+          ${optionsHtml}
+        </select>
+        <div class="flex items-center gap-2 w-28 bg-slate-50 border border-slate-200 rounded-lg px-2 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500">
+          <input type="number" class="qty-input w-full bg-transparent py-2.5 text-sm outline-none text-center font-bold text-indigo-700" value="1" min="1" onchange="kalkulasiTotalPengujian()" onkeyup="kalkulasiTotalPengujian()">
+          <span class="text-xs text-slate-400 font-bold uppercase pr-1">Spl</span>
+        </div>
+        <div class="subtotal-text w-32 text-right text-sm font-extrabold text-slate-700">Rp 0,00</div>
+        <button type="button" onclick="hapusBarisPengujian(this)" class="bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white w-10 h-10 flex items-center justify-center rounded-lg font-bold transition-all shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      `;
+      container.appendChild(row);
+      kalkulasiTotalPengujian();
+    }
+
+    function hapusBarisPengujian(btn) {
+      const row = btn.parentElement;
+      row.remove();
+      kalkulasiTotalPengujian();
+    }
+
+    function kalkulasiTotalPengujian() {
+      const rows = document.querySelectorAll('.pengujian-row');
+      let grandTotal = 0;
+      let rincianKeperluan = [];
+
+      rows.forEach(row => {
+        const select = row.querySelector('.produk-select');
+        const qtyInput = row.querySelector('.qty-input');
+        const subtotalText = row.querySelector('.subtotal-text');
+
+        if (select.value) {
+          const harga = parseInt(select.value);
+          const qty = parseInt(qtyInput.value) || 1;
+          const subtotal = harga * qty;
+          
+          grandTotal += subtotal;
+          subtotalText.innerText = 'Rp ' + formatRpNumber(subtotal);
+
+          const selectedOption = select.options[select.selectedIndex];
+          const namaPengujian = selectedOption.getAttribute('data-nama');
+          
+          rincianKeperluan.push(`${namaPengujian} (${qty} Sampel @ Rp ${formatRpNumber(harga)})`);
+        } else {
+          subtotalText.innerText = 'Rp 0,00';
+        }
+      });
+
+      const inputJumlah = document.getElementById('jumlahUang');
+      const inputKeperluan = document.getElementById('keperluan');
+      
+      if (grandTotal > 0 || rincianKeperluan.length > 0) {
+        inputJumlah.value = formatRpNumber(grandTotal);
+        formatRupiah(inputJumlah);
+        inputKeperluan.value = rincianKeperluan.join(', ');
+      } else {
+        inputJumlah.value = '';
+        document.getElementById('terbilang').value = '';
+        inputKeperluan.value = '';
+      }
+    }
+
+    function switchTab(tab) {
+      ['view-input', 'view-laporan', 'view-pengaturan'].forEach(v => document.getElementById(v).style.display = 'none');
+      ['tab-input', 'tab-laporan', 'tab-pengaturan'].forEach(t => {
+        const el = document.getElementById(t);
+        el.className = "flex-1 py-3 text-center rounded-xl transition-all font-bold text-sm text-indigo-100 hover:bg-white/10 hover:text-white";
+      });
+      document.getElementById('view-' + tab).style.display = 'block';
+      const activeEl = document.getElementById('tab-' + tab);
+      activeEl.className = "flex-1 py-3 text-center rounded-xl transition-all font-bold text-sm bg-white text-indigo-800 shadow-md";
+    }
+
+    function setTanggalHariIni() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById('tanggalKuitansi').value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    function updateGeneratedId() {
+      const nextNum = dbKuitansi.length + 1;
+      document.getElementById('noKuitansi').value = nextNum.toString().padStart(3, '0');
+    }
+
+    // --- Inisialisasi ---
+    loadBlankoBackground();
+    loadTextCoordinates();
+    loadPengaturanTtd();
+    tambahBarisPengujian(); 
+
+    // LOAD DATA DENGAN SISTEM FETCH (UNTUK VERCEL API)
+    if(API_URL !== "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
+      loadDataFromServer();
+    } else {
+      // Data dummy untuk pengembangan awal bila API_URL belum diisi
+      console.warn("⚠️ API_URL belum diisi! Menjalankan mode offline dengan data dummy.");
+      setTanggalHariIni(); updateGeneratedId();
+    }
+
+    function loadDataFromServer() {
+      document.getElementById('loading-overlay').style.display = 'flex';
+      
+      fetch(API_URL)
+        .then(response => response.json())
+        .then(result => {
+          if (result.status === 'success') {
+            dbKuitansi = result.data || [];
+            renderHistory(); renderBukuBesar();
+            setTanggalHariIni(); updateGeneratedId();
+          } else {
+            alert("Gagal memuat data dari server: " + result.message);
+          }
+        })
+        .catch(err => {
+          alert("Terjadi kesalahan jaringan (Pastikan link URL Web App benar dan bisa diakses public): " + err.message);
+        })
+        .finally(() => {
+          document.getElementById('loading-overlay').style.display = 'none';
+        });
+    }
+
+    function simpanPengaturanTtd() {
+      const nama = document.getElementById('settingNamaTtd').value;
+      const nip = document.getElementById('settingNipTtd').value;
+      localStorage.setItem('ttd_nama', nama);
+      localStorage.setItem('ttd_nip', nip);
+      
+      const lapNama = document.getElementById('lapTtdNama');
+      const lapNip = document.getElementById('lapTtdNip');
+      if(lapNama) lapNama.innerText = nama || '......................................................';
+      if(lapNip) lapNip.innerText = nip || '............................................';
+      
+      const valNama = document.getElementById('valTtdNama');
+      const valNip = document.getElementById('valTtdNip');
+      if(valNama) valNama.innerText = nama;
+      if(valNip) valNip.innerText = nip ? 'NIP. ' + nip : '';
+    }
+
+    function loadPengaturanTtd() {
+      const nama = localStorage.getItem('ttd_nama') || '';
+      const nip = localStorage.getItem('ttd_nip') || '';
+      if(document.getElementById('settingNamaTtd')) document.getElementById('settingNamaTtd').value = nama;
+      if(document.getElementById('settingNipTtd')) document.getElementById('settingNipTtd').value = nip;
+      simpanPengaturanTtd();
+    }
+
+    function formatRupiah(obj) {
+      let angka = obj.value.replace(/[^,\d]/g, '').toString();
+      let split = angka.split(','); 
+      let sisa = split[0].length % 3;
+      let rupiah = split[0].substr(0, sisa); 
+      let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+      if (ribuan) { let separator = sisa ? '.' : ''; rupiah += separator + ribuan.join('.'); }
+      
+      obj.value = split[1] !== undefined ? rupiah + ',' + split[1].substring(0, 2) : rupiah;
+      
+      let numericValue = parseInt(split[0].replace(/[^0-9]/g, ''));
+      let textTerbilang = numericValue ? "# " + convertTerbilang(numericValue) + " Rupiah #" : "";
+      document.getElementById('terbilang').value = textTerbilang.replace(/\s+/g, ' ');
+    }
+
+    function convertTerbilang(angka) {
+      const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+      let temp = "";
+      if (angka < 12) temp = " " + bilangan[angka];
+      else if (angka < 20) temp = convertTerbilang(angka - 10) + " Belas";
+      else if (angka < 100) temp = convertTerbilang(Math.floor(angka / 10)) + " Puluh" + convertTerbilang(angka % 10);
+      else if (angka < 200) temp = " Seratus" + convertTerbilang(angka - 100);
+      else if (angka < 1000) temp = convertTerbilang(Math.floor(angka / 100)) + " Ratus" + convertTerbilang(angka % 100);
+      else if (angka < 2000) temp = " Seribu" + convertTerbilang(angka - 1000);
+      else if (angka < 1000000) temp = convertTerbilang(Math.floor(angka / 1000)) + " Ribu" + convertTerbilang(angka % 1000);
+      else if (angka < 1000000000) temp = convertTerbilang(Math.floor(angka / 1000000)) + " Juta" + convertTerbilang(angka % 1000000);
+      return temp.trim();
+    }
+
+    function formatTglIndo(dateVal) {
+      if(!dateVal) return '';
+      const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      if (dateVal instanceof Date) { return `${dateVal.getDate().toString().padStart(2, '0')} ${bulan[dateVal.getMonth()]} ${dateVal.getFullYear()}`; }
+      if (typeof dateVal === 'string') {
+        const parts = dateVal.split('-');
+        if(parts.length === 3) { return `${parts[2]} ${bulan[parseInt(parts[1])-1]} ${parts[0]}`; }
+      }
+      return dateVal;
+    }
+
+    function getTglBiasa(dateVal) {
+      if(!dateVal) return '';
+      if (dateVal instanceof Date) { return `${dateVal.getDate().toString().padStart(2,'0')}/${(dateVal.getMonth()+1).toString().padStart(2,'0')}/${dateVal.getFullYear()}`; }
+      if (typeof dateVal === 'string') {
+        const parts = dateVal.split('-');
+        if(parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return dateVal;
+    }
+
+    function ambilDataDariForm() {
+      const tglInput = document.getElementById('tanggalKuitansi').value;
+      let valJumlah = document.getElementById('jumlahUang').value || '0';
+      if (!valJumlah.includes(',')) valJumlah += ',00';
+      else if (valJumlah.split(',')[1].length === 1) valJumlah += '0';
+      
+      return {
+        id: document.getElementById('noKuitansi').value || '001', 
+        tglBiasa: getTglBiasa(tglInput), 
+        tglIndo: formatTglIndo(tglInput),
+        nama: document.getElementById('nama').value || '...........................................',
+        jumlahRp: valJumlah,
+        terbilang: document.getElementById('terbilang').value || '.......................................................',
+        keperluan: document.getElementById('keperluan').value,
+        noSurat: document.getElementById('noSurat').value
+      };
+    }
+
+    // --- Preview & Save Logic ---
+    function previewForm() {
+      const form = document.getElementById('kuitansiForm');
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+      currentPreviewData = ambilDataDariForm();
+      isiLayoutKuitansi(currentPreviewData);
+      
+      const btnAction = document.getElementById('btnPreviewAction');
+      btnAction.innerHTML = "💾 Simpan & Cetak Blangko";
+      btnAction.onclick = function() { prosesSimpanData(currentPreviewData, true); };
+
+      document.getElementById('toggleDragMode').checked = false; toggleDrag(); 
+      document.getElementById('app-print').classList.add('show-preview');
+    }
+
+    function previewHistory(index) {
+      const data = dbKuitansi[index];
+      isiLayoutKuitansi(data);
+      const btnAction = document.getElementById('btnPreviewAction');
+      btnAction.innerHTML = "🖨️ Cetak Ulang ke Blangko";
+      btnAction.onclick = function() { cetakKuitansiFisik(); };
+
+      document.getElementById('toggleDragMode').checked = false; toggleDrag();
+      document.getElementById('app-print').classList.add('show-preview');
+    }
+
+    function simpanLangsung() {
+      const form = document.getElementById('kuitansiForm');
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+      prosesSimpanData(ambilDataDariForm(), false);
+    }
+
+    function prosesSimpanData(data, laluCetak) {
+      if(API_URL === "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
+        alert("Peringatan: URL API Belum Disetel. Data hanya akan tersimpan sementara di layar Anda.");
+        dbKuitansi.unshift(data);
+        renderHistory(); renderBukuBesar(); resetForm();
+        if(laluCetak) cetakKuitansiFisik();
+        return;
+      }
+
+      document.getElementById('loading-overlay').style.display = 'flex';
+      document.getElementById('loading-text').innerText = "Menyimpan ke Database...";
+      
+      fetch(API_URL, {
+        method: 'POST',
+        // Menggunakan text/plain untuk melewati batasan validasi CORS Apps Script
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(result => {
+        if(result.status === 'success') {
+          dbKuitansi.unshift(result.data);
+          renderHistory(); renderBukuBesar(); resetForm();
+          if(laluCetak) cetakKuitansiFisik();
+        } else {
+          alert("Gagal menyimpan ke server: " + result.message);
+        }
+      })
+      .catch(err => {
+        alert("Terjadi kesalahan jaringan saat menyimpan: " + err.message);
+      })
+      .finally(() => {
+        document.getElementById('loading-overlay').style.display = 'none';
+        document.getElementById('loading-text').innerText = "Menyinkronkan Database...";
+      });
+    }
+
+    function cetakKuitansiFisik() {
+      document.getElementById('toggleDragMode').checked = false; toggleDrag(); 
+      document.body.classList.add('print-kuitansi');
+      const style = document.createElement('style');
+      style.id = 'page-size-kuitansi';
+      style.innerHTML = '@media print { @page { size: 210mm 160mm !important; margin: 0mm !important; } }';
+      document.head.appendChild(style);
+
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove('print-kuitansi');
+        if (document.getElementById('page-size-kuitansi')) {
+          document.getElementById('page-size-kuitansi').remove(); 
+        }
+      }, 300);
+    }
+
+    function tutupPreview() {
+      document.getElementById('toggleDragMode').checked = false; toggleDrag();
+      document.getElementById('app-print').classList.remove('show-preview');
+    }
+
+    function isiLayoutKuitansi(data) {
+      let displayId = data.id;
+      if (displayId && displayId.includes('-')) displayId = displayId.split('-')[2];
+        
+      document.getElementById('valId').innerText = displayId || '...'; 
+      document.getElementById('valTgl').innerText = data.tglBiasa;
+      document.getElementById('valNama').innerText = data.nama;
+      
+      let displayRp = data.jumlahRp;
+      if (!displayRp.includes(',')) displayRp += ',00';
+      else if (displayRp.split(',')[1].length === 1) displayRp += '0';
+      
+      document.getElementById('valTerbilang').innerText = data.terbilang;
+      document.getElementById('valKeperluan').innerText = data.keperluan;
+      document.getElementById('valSurat').innerText = data.noSurat;
+      document.getElementById('valRp').innerText = displayRp;
+      
+      let tglSplit = (data.tglIndo || "").split(' ');
+      let tglBulanSaja = (tglSplit[0] && tglSplit[1]) ? `${tglSplit[0]} ${tglSplit[1]}` : '';
+      let tahunSaja = tglSplit[2] ? tglSplit[2].slice(-2) : ''; 
+      
+      document.getElementById('valTglHariBulan').innerText = tglBulanSaja;
+      document.getElementById('valTglTahun').innerText = tahunSaja;
+      
+      simpanPengaturanTtd();
+    }
+
+    // --- Drag & Drop Kalibrasi ---
+    let isDragging = false, isResizing = false, currentEl = null, startX, startY, startTopMm, startLeftMm, startWidthMm;
+    let activeEl = null;
+
+    function toggleDrag() {
+      const isDragMode = document.getElementById('toggleDragMode').checked;
+      const items = document.querySelectorAll('.data-item');
+      const container = document.querySelector('.kuitansi-kertas');
+      let pxPerMm = container.getBoundingClientRect().width / 210; 
+      
+      items.forEach(el => {
+        if (isDragMode) {
+          el.style.outline = '1px dashed #ef4444'; el.style.backgroundColor = 'rgba(255, 255, 0, 0.4)';
+          el.style.borderRight = '6px solid #4f46e5'; el.style.paddingRight = '5px'; el.style.whiteSpace = 'normal';
+          
+          el.onmousemove = function(e) {
+            let rect = this.getBoundingClientRect();
+            if (e.clientX > rect.right - 12) this.style.cursor = 'ew-resize';
+            else this.style.cursor = 'move';
+          };
+          
+          el.onwheel = function(e) {
+            e.preventDefault();
+            let currentSize = parseFloat(window.getComputedStyle(this).fontSize) || 14;
+            this.style.fontSize = (e.deltaY < 0 ? currentSize + 0.5 : currentSize - 0.5) + 'px';
+            saveTextCoordinates();
+          };
+
+          el.onmousedown = function(e) {
+            if(activeEl && activeEl !== this) {
+               activeEl.style.backgroundColor = 'rgba(255, 255, 0, 0.4)';
+               activeEl.style.border = 'none'; activeEl.style.borderRight = '6px solid #4f46e5';
+               activeEl.style.outline = '1px dashed #ef4444';
+            }
+            activeEl = this;
+            this.style.backgroundColor = 'rgba(134, 239, 172, 0.8)'; 
+            this.style.outline = '2px solid #22c55e'; 
+
+            let rect = this.getBoundingClientRect();
+            if (e.clientX > rect.right - 12) {
+              isResizing = true; currentEl = this; startX = e.clientX;
+              startWidthMm = parseFloat(this.style.width) || (rect.width / pxPerMm);
+              this.style.backgroundColor = 'rgba(99, 102, 241, 0.3)';
+              e.preventDefault(); return;
+            }
+            isDragging = true; currentEl = this; startX = e.clientX; startY = e.clientY;
+            startTopMm = parseFloat(this.style.top) || 0; startLeftMm = parseFloat(this.style.left) || 0;
+            this.style.backgroundColor = 'rgba(134, 239, 172, 0.8)'; e.preventDefault(); 
+          };
+        } else {
+          activeEl = null;
+          el.style.cursor = 'default'; el.style.outline = 'none'; el.style.backgroundColor = 'transparent'; 
+          el.style.border = 'none'; el.style.borderRight = 'none'; el.style.paddingRight = '0';
+          el.onmousedown = null; el.onmousemove = null; el.onwheel = null;
+        }
+      });
+      if (!isDragMode) saveTextCoordinates(); 
+    }
+
+    document.onmousemove = function(e) {
+      if (!currentEl) return;
+      const container = document.querySelector('.kuitansi-kertas');
+      let pxPerMm = container.getBoundingClientRect().width / 210; 
+      
+      if (isDragging) {
+        currentEl.style.top = (startTopMm + ((e.clientY - startY) / pxPerMm)).toFixed(2) + 'mm';
+        currentEl.style.left = (startLeftMm + ((e.clientX - startX) / pxPerMm)).toFixed(2) + 'mm';
+      } else if (isResizing) {
+        let newWidthMm = startWidthMm + ((e.clientX - startX) / pxPerMm);
+        currentEl.style.width = newWidthMm.toFixed(2) + 'mm';
+      }
+    };
+
+    document.onmouseup = function() {
+      if (isDragging && currentEl) { saveTextCoordinates(); }
+      if (isResizing && currentEl) { currentEl.style.backgroundColor = 'rgba(134, 239, 172, 0.8)'; saveTextCoordinates(); }
+      isDragging = false; isResizing = false; currentEl = null;
+    };
+
+    document.addEventListener('keydown', function(e) {
+      if (!document.getElementById('toggleDragMode').checked || !activeEl) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      const step = e.shiftKey ? 2 : 0.5;
+      let currentTop = parseFloat(activeEl.style.top) || 0;
+      let currentLeft = parseFloat(activeEl.style.left) || 0;
+      let prevent = true;
+
+      switch(e.key) {
+        case 'ArrowUp': activeEl.style.top = (currentTop - step) + 'mm'; break;
+        case 'ArrowDown': activeEl.style.top = (currentTop + step) + 'mm'; break;
+        case 'ArrowLeft': activeEl.style.left = (currentLeft - step) + 'mm'; break;
+        case 'ArrowRight': activeEl.style.left = (currentLeft + step) + 'mm'; break;
+        default: prevent = false;
+      }
+      if(prevent) { e.preventDefault(); saveTextCoordinates(); }
+    });
+
+    function saveTextCoordinates() {
+      let coordsToSave = {};
+      document.querySelectorAll('.data-item').forEach(el => { 
+        coordsToSave[el.id] = { 
+          top: parseFloat(el.style.top), left: parseFloat(el.style.left),
+          width: parseFloat(el.style.width) || null,
+          fontSize: parseFloat(el.style.fontSize) || parseFloat(window.getComputedStyle(el).fontSize) || null
+        }; 
+      });
+      localStorage.setItem('kuitansi_coords_v7', JSON.stringify(coordsToSave));
+    }
+
+    function loadTextCoordinates() {
+      let saved = JSON.parse(localStorage.getItem('kuitansi_coords_v7'));
+      let coordsToApply = saved ? saved : defaultCoords;
+      for (let key in coordsToApply) {
+        let el = document.getElementById(key);
+        if (el) { 
+          if(coordsToApply[key].top) el.style.top = coordsToApply[key].top + 'mm'; 
+          if(coordsToApply[key].left) el.style.left = coordsToApply[key].left + 'mm'; 
+          if(coordsToApply[key].width) el.style.width = coordsToApply[key].width + 'mm';
+          if(coordsToApply[key].fontSize) el.style.fontSize = coordsToApply[key].fontSize + 'px';
+        }
+      }
+    }
+
+    function resetCoordsDefault() {
+      if(confirm('Yakin ingin mereset posisi teks ke pengaturan awal?')) {
+        localStorage.removeItem('kuitansi_coords_v7');
+        loadTextCoordinates(); alert('Posisi dikembalikan ke standar. Silakan reload halaman.'); location.reload();
+      }
+    }
+
+    function handleUploadBlanko(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          localStorage.setItem('blanko_image', e.target.result); 
+          applyBlankoBackground(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function applyBlankoBackground(base64Image) {
+      const bgDiv = document.getElementById('bg-blanko');
+      if(base64Image) {
+        bgDiv.style.backgroundImage = `url('${base64Image}')`;
+        bgDiv.innerHTML = ''; bgDiv.classList.remove('bg-slate-100', 'border-dashed');
+      }
+    }
+
+    function loadBlankoBackground() {
+      const savedBg = localStorage.getItem('blanko_image');
+      if (savedBg) applyBlankoBackground(savedBg);
+    }
+
+    function hapusBlanko() {
+      localStorage.removeItem('blanko_image');
+      const bgDiv = document.getElementById('bg-blanko');
+      bgDiv.style.backgroundImage = 'none'; bgDiv.classList.add('bg-slate-100', 'border-dashed');
+      bgDiv.innerHTML = `<div class="text-center p-6 bg-white/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200"><div class="text-3xl mb-2">📸</div><p class="text-slate-500 font-bold mb-1">Background Blanko Kosong</p><p class="text-xs text-slate-400">Unggah foto blangko di menu "Kalibrasi"</p></div>`;
+      document.getElementById('uploadBlanko').value = '';
+    }
+
+    function renderHistory() {
+      const tbody = document.getElementById('tableBody'); const emptyState = document.getElementById('emptyState');
+      tbody.innerHTML = '';
+      if(dbKuitansi.length === 0) { emptyState.classList.remove('hidden'); } else {
+        emptyState.classList.add('hidden');
+        dbKuitansi.forEach((item, index) => {
+          let displayRp = item.jumlahRp.includes(',') ? item.jumlahRp : item.jumlahRp + ',00';
+          if(displayRp.split(',')[1] && displayRp.split(',')[1].length === 1) displayRp += '0';
+
+          const tr = document.createElement('tr'); tr.className = "hover:bg-slate-50/50 transition-colors";
+          tr.innerHTML = `
+            <td class="px-5 py-4 font-bold text-slate-800 whitespace-nowrap">${item.id} <br><span class="text-xs font-normal text-slate-500">${item.tglBiasa}</span></td>
+            <td class="px-5 py-4"><div class="font-bold text-slate-700">${item.nama}</div><div class="text-xs text-slate-500 line-clamp-1 truncate max-w-xs mt-1" title="${item.keperluan}">${item.keperluan}</div></td>
+            <td class="px-5 py-4 font-extrabold text-indigo-700">Rp ${displayRp}</td>
+            <td class="px-5 py-4 text-right"><button onclick='previewHistory(${index})' class="bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm">Preview</button></td>`;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    function renderBukuBesar() {
+      const tbody = document.getElementById('tableBukuBesar');
+      const printTbody = document.getElementById('printTableBukuBesar');
+      tbody.innerHTML = ''; printTbody.innerHTML = '';
+      
+      const dataBukuBesar = [...dbKuitansi].reverse(); 
+      let saldoRunning = 0; let totalPenerimaan = 0;
+
+      dataBukuBesar.forEach((item, index) => {
+        let nominal = parseInt((item.jumlahRp || "0").replace(/\./g, '')) || 0;
+        totalPenerimaan += nominal; saldoRunning += nominal; 
+        
+        const tr = document.createElement('tr'); tr.className = "hover:bg-slate-50/50 transition-colors";
+        tr.innerHTML = `<td class="px-4 py-3 border-r border-slate-200 text-center font-medium">${index + 1}</td><td class="px-4 py-3 border-r border-slate-200 whitespace-nowrap text-slate-600">${item.tglBiasa}</td><td class="px-4 py-3 border-r border-slate-200 whitespace-nowrap font-medium text-slate-700">${item.id}</td><td class="px-4 py-3 border-r border-slate-200"><div class="font-bold text-slate-800">${item.nama}</div><div class="text-xs text-slate-500 mt-0.5">${item.keperluan || 'Hasil Pengujian'}</div></td><td class="px-4 py-3 border-r border-slate-200 text-right font-semibold text-slate-700">${formatRpNumber(nominal)}</td><td class="px-4 py-3 text-right font-extrabold text-indigo-700">${formatRpNumber(saldoRunning)}</td>`;
+        tbody.appendChild(tr);
+
+        const trPrint = document.createElement('tr');
+        trPrint.innerHTML = `<td class="px-3 py-2 border border-black text-center">${index + 1}</td><td class="px-3 py-2 border border-black text-center whitespace-nowrap">${item.tglBiasa}</td><td class="px-3 py-2 border border-black text-center whitespace-nowrap">${item.id}</td><td class="px-3 py-2 border border-black"><b>${item.nama}</b><br><span style="font-size: 10px;">${item.keperluan || 'Hasil Pengujian'}</span></td><td class="px-3 py-2 border border-black text-right">${formatRpNumber(nominal)}</td><td class="px-3 py-2 border border-black text-right font-bold">${formatRpNumber(saldoRunning)}</td>`;
+        printTbody.appendChild(trPrint);
+      });
+
+      document.getElementById('totalPenerimaan').innerText = 'Rp ' + formatRpNumber(totalPenerimaan);
+      document.getElementById('totalSaldo').innerText = 'Rp ' + formatRpNumber(saldoRunning);
+      document.getElementById('printTotalPenerimaan').innerText = formatRpNumber(totalPenerimaan);
+      document.getElementById('printTotalSaldo').innerText = formatRpNumber(saldoRunning);
+      document.getElementById('tahunLaporan').innerText = new Date().getFullYear();
+      document.getElementById('tglPrintLaporan').innerText = formatTglIndo(new Date());
+
+      if(document.getElementById('statTotalKuitansi')) {
+        document.getElementById('statTotalKuitansi').innerText = dataBukuBesar.length;
+        document.getElementById('statTotalPenerimaan').innerText = 'Rp ' + formatRpNumber(totalPenerimaan);
+      }
+    }
+
+    function cetakBukuBesar() {
+      document.body.classList.add('print-laporan');
+      const style = document.createElement('style');
+      style.id = 'page-size-laporan';
+      style.innerHTML = '@page { size: A4 portrait; margin: 0mm; }';
+      document.head.appendChild(style);
+
+      setTimeout(() => { 
+        window.print(); 
+        document.body.classList.remove('print-laporan'); 
+        document.getElementById('page-size-laporan').remove();
+      }, 300);
+    }
+
+    function resetForm() { 
+      document.getElementById('kuitansiForm').reset(); 
+      document.getElementById('terbilang').value = ''; 
+      document.getElementById('containerPengujian').innerHTML = '';
+      tambahBarisPengujian(); 
+    }
+  </script>
+</body>
+</html>
