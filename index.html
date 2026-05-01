@@ -55,7 +55,7 @@
        ========================================================= */
     @media print {
       html, body { background-color: transparent !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
-      #app-wrapper, #view-input, #view-laporan, #view-pengaturan { display: none !important; }
+      #login-screen, #app-wrapper, #view-input, #view-laporan, #view-pengaturan { display: none !important; }
       
       /* Print Kuitansi (Blangko) */
       body.print-kuitansi #app-print { display: block !important; position: absolute !important; top: 0 !important; left: 0 !important; width: 210mm !important; height: 160mm !important; background: transparent !important; padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
@@ -69,14 +69,71 @@
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
+<body class="bg-slate-50 text-slate-800 min-h-screen">
 
+  <!-- ================= LAYAR LOGIN ================= -->
+  <div id="login-screen" class="fixed inset-0 flex items-center justify-center z-[100] bg-slate-900 overflow-hidden">
+    
+    <!-- Gambar Latar Belakang (Menggunakan Tag IMG agar lebih kebal error) -->
+    <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop" 
+         class="absolute inset-0 w-full h-full object-cover opacity-40 z-0" 
+         alt="Background Gedung" 
+         onerror="this.style.display='none'">
+    
+    <!-- Overlay Gelap dengan Blur -->
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] z-10"></div>
+    
+    <div class="bg-white p-8 md:p-10 rounded-[2rem] shadow-2xl w-full max-w-md border border-white/50 relative overflow-hidden mx-4 z-20">
+        <!-- Dekorasi Background Login -->
+        <div class="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl"></div>
+
+        <!-- Header Login -->
+        <div class="flex flex-col items-center mb-8 relative z-10">
+            <img src="https://disdagprovkalsel.com/img/logo_disdagprovkalsel.png" alt="Logo Pemprov Kalsel" class="h-24 w-auto mb-5 drop-shadow-sm">
+            <h2 class="text-center font-extrabold text-slate-800 text-lg md:text-xl leading-snug">PEMERINTAH PROVINSI<br>KALIMANTAN SELATAN</h2>
+            <p class="text-center text-[11px] md:text-xs font-bold text-slate-500 mt-1.5 uppercase tracking-widest">Dinas Pekerjaan Umum dan Penataan Ruang</p>
+            <div class="mt-3 bg-indigo-50 border border-indigo-100 px-4 py-1.5 rounded-full mb-4">
+              <p class="text-center text-sm font-extrabold text-indigo-700">LABORATORIUM BAHAN KONSTRUKSI</p>
+            </div>
+            
+            <!-- Detail Informasi Kontak Instansi -->
+            <div class="text-center text-[10px] text-slate-600 leading-relaxed font-medium">
+              <p>Jl. Yos Sudarso No. 35 Kel. Telaga Biru Kec. Banjarmasin Barat<br>Kota Banjarmasin RT. 34 RW. 02</p>
+              <p>Telpon : (0511) 4423377 | Fax : (0511) 4423377</p>
+              <p>Email : laboratoriumpuprov.kalsel@yahoo.com</p>
+            </div>
+        </div>
+
+        <!-- Form Login -->
+        <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-5 relative z-10">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Username</label>
+                <input type="text" id="loginUsername" required class="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" placeholder="Masukkan username">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Kata Sandi</label>
+                <input type="password" id="loginPassword" required class="w-full px-5 py-3.5 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" placeholder="••••••••">
+            </div>
+            
+            <p id="login-error" class="text-rose-500 text-xs font-bold mt-2 text-center hidden bg-rose-50 p-2 rounded-lg border border-rose-100">Username atau kata sandi salah!</p>
+
+            <button id="btnLogin" type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/30 transform hover:-translate-y-0.5 mt-2 flex justify-center items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+              Masuk Aplikasi
+            </button>
+        </form>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
   <div id="loading-overlay">
     <div class="loader"></div>
     <p class="mt-4 font-extrabold text-indigo-700 tracking-wide" id="loading-text">Menyinkronkan Database...</p>
   </div>
 
-  <div id="app-wrapper" class="max-w-5xl mx-auto space-y-6">
+  <!-- ================= APLIKASI UTAMA ================= -->
+  <div id="app-wrapper" class="max-w-5xl mx-auto space-y-6 p-4 md:p-8" style="display: none;">
     
     <!-- HEADER & NAV (MODERN DASHBOARD) -->
     <div class="bg-gradient-to-br from-indigo-800 via-blue-700 to-indigo-900 text-white rounded-3xl shadow-xl overflow-hidden relative">
@@ -91,6 +148,14 @@
           <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">Sistem Kuitansi BLUD</h1>
           <p class="text-indigo-100 text-sm md:text-base opacity-90">Kelola penerimaan retribusi pengujian laboratorium dengan presisi.</p>
         </div>
+        
+        <!-- Tombol Logout -->
+        <div>
+          <button onclick="logout()" class="text-sm bg-rose-500/20 hover:bg-rose-500/40 text-rose-100 hover:text-white px-5 py-2.5 rounded-xl font-bold backdrop-blur-sm transition-all border border-rose-500/30 flex items-center gap-2 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            Keluar
+          </button>
+        </div>
       </div>
       
       <!-- Modern Tabs -->
@@ -102,7 +167,7 @@
           📊 Buku Besar
         </button>
         <button onclick="switchTab('pengaturan')" id="tab-pengaturan" class="flex-1 py-3 text-center rounded-xl transition-all font-bold text-sm text-indigo-100 hover:bg-white/10 hover:text-white">
-          ⚙️ Kalibrasi Blangko
+          ⚙️ Kalibrasi & Pengaturan
         </button>
       </div>
     </div>
@@ -320,6 +385,22 @@
 
     <!-- WRAPPER VIEW PENGATURAN -->
     <div id="view-pengaturan" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-10">
+      
+      <!-- PENGATURAN LOGIN -->
+      <div class="mb-10 pb-8 border-b border-slate-100">
+        <h3 class="text-lg font-bold mb-5 flex items-center gap-2 text-slate-800">🔐 Pengaturan Akses Login</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Username Login</label>
+            <input type="text" id="settingUser" value="admin" class="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold">
+          </div>
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Kata Sandi Baru</label>
+            <input type="text" id="settingPass" value="admin123" class="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold tracking-wide">
+          </div>
+        </div>
+      </div>
+
       <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-6">
         <div class="p-3 bg-slate-100 rounded-xl text-slate-600">⚙️</div>
         <div>
@@ -359,9 +440,9 @@
             <input type="text" id="settingNipTtd" oninput="updateTtdUI()" value="19840110 200604 1 006" class="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold tracking-wide" placeholder="Contoh: 19800101 200501 1 001">
           </div>
         </div>
-        <div class="mt-5">
-          <button type="button" onclick="simpanPengaturanKeDB()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-sm flex items-center gap-2">
-            💾 Simpan Data Bendahara & Background ke Database
+        <div class="mt-8">
+          <button type="button" onclick="simpanPengaturanKeDB()" class="w-full sm:w-auto justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl transition-all shadow-sm flex items-center gap-2">
+            💾 Simpan Semua Pengaturan ke Database
           </button>
         </div>
       </div>
@@ -508,6 +589,134 @@
       valTtdNama: { top: 130, left: 145, fontSize: 15 }, 
       valTtdNip: { top: 135, left: 145, fontSize: 15 }
     };
+
+    // --- SISTEM LOGIN YANG TERPUSAT DENGAN DATABASE ---
+    function checkAuth() {
+      const isLoggedIn = localStorage.getItem('isLoggedIn_blud');
+      if (isLoggedIn === 'true') {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-wrapper').style.display = 'block';
+        loadDataFromServer();
+      } else {
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('app-wrapper').style.display = 'none';
+      }
+    }
+
+    function processFetchedData(result) {
+      dbKuitansi = result.data || [];
+            
+      renderHistory(); 
+      updateDashboardStats();
+      populateYearDropdown();
+      applyFilterLaporan();
+
+      setTanggalHariIni(); updateGeneratedId();
+      
+      // Update UI dengan pengaturan dari Database
+      if (result.pengaturan) {
+        document.getElementById('settingNamaTtd').value = result.pengaturan.nama;
+        document.getElementById('settingNipTtd').value = result.pengaturan.nip;
+        document.getElementById('settingUser').value = result.pengaturan.userLogin || 'admin';
+        document.getElementById('settingPass').value = result.pengaturan.passLogin || 'admin123';
+        updateTtdUI();
+
+        currentBgUrl = result.pengaturan.bgUrl;
+        if(currentBgUrl && currentBgUrl !== "") {
+          applyBlankoBackground(currentBgUrl);
+        }
+      }
+
+      loadTextCoordinates();
+      tambahBarisPengujian(); 
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const user = document.getElementById('loginUsername').value;
+      const pass = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('btnLogin');
+      const err = document.getElementById('login-error');
+      
+      // Mode Offline (Jika API belum diisi)
+      if(API_URL === "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
+        if(user === 'admin' && pass === 'admin123') {
+           localStorage.setItem('isLoggedIn_blud', 'true');
+           document.getElementById('login-screen').style.display = 'none';
+           document.getElementById('app-wrapper').style.display = 'block';
+           console.warn("⚠️ API_URL belum diisi! Menjalankan mode offline dengan data dummy.");
+           setTanggalHariIni(); updateGeneratedId(); loadTextCoordinates(); tambahBarisPengujian(); 
+        } else {
+           err.innerText = "Username/Kata sandi salah! (Mode Offline: admin / admin123)";
+           err.classList.remove('hidden');
+        }
+        return;
+      }
+
+      // Mode Online (Cek ke Database Google Sheets)
+      btn.innerHTML = `<span class="loader" style="width:20px;height:20px;border-width:2px;display:inline-block;border-top-color:white;animation:spin 1s linear infinite;"></span> <span class="ml-2">Memeriksa...</span>`;
+      btn.disabled = true;
+      err.classList.add('hidden');
+
+      fetch(API_URL, { redirect: 'follow' })
+        .then(response => response.text())
+        .then(text => {
+          let result;
+          try { result = JSON.parse(text); } catch (e) { throw new Error("Gagal membaca database."); }
+
+          let validUser = result.pengaturan ? (result.pengaturan.userLogin || 'admin') : 'admin';
+          let validPass = result.pengaturan ? (result.pengaturan.passLogin || 'admin123') : 'admin123';
+
+          if (user === validUser && pass === validPass) {
+            localStorage.setItem('isLoggedIn_blud', 'true');
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-wrapper').style.display = 'block';
+            
+            // Proses data karena kita sudah terlanjur men-downloadnya (Agar tidak loading 2x)
+            if(result.status === 'success') {
+              processFetchedData(result);
+            }
+          } else {
+            err.innerText = "Username atau kata sandi salah!";
+            err.classList.remove('hidden');
+          }
+        })
+        .catch(error => {
+          err.innerText = "Terjadi kesalahan jaringan/database. Coba lagi.";
+          err.classList.remove('hidden');
+        })
+        .finally(() => {
+          btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg> Masuk Aplikasi`;
+          btn.disabled = false;
+        });
+    }
+
+    function logout() {
+      if(confirm('Yakin ingin keluar dari aplikasi?')) {
+        localStorage.removeItem('isLoggedIn_blud');
+        location.reload();
+      }
+    }
+
+    function loadDataFromServer() {
+      if(API_URL === "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") return;
+      document.getElementById('loading-overlay').style.display = 'flex';
+      
+      fetch(API_URL, { redirect: 'follow' })
+        .then(response => response.text())
+        .then(text => {
+          let result;
+          try { result = JSON.parse(text); } catch (e) { throw new Error("Gagal membaca database."); }
+
+          if (result.status === 'success') {
+            processFetchedData(result);
+          } else {
+            alert("Gagal memuat data dari server: " + result.message);
+          }
+        })
+        .catch(err => alert("Terjadi kesalahan jaringan: " + err.message))
+        .finally(() => document.getElementById('loading-overlay').style.display = 'none');
+    }
 
     function handleUploadDokumen(event) {
       const file = event.target.files[0];
@@ -688,18 +897,6 @@
       document.getElementById('noKuitansi').value = `${formattedNum}/KWT/LBK/${currentYear}`;
     }
 
-    // --- Inisialisasi ---
-    loadTextCoordinates();
-    updateTtdUI();
-    tambahBarisPengujian(); 
-
-    if(API_URL !== "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
-      loadDataFromServer();
-    } else {
-      console.warn("⚠️ API_URL belum diisi! Menjalankan mode offline dengan data dummy.");
-      setTanggalHariIni(); updateGeneratedId();
-    }
-
     function populateYearDropdown() {
       const filterTahun = document.getElementById('filterTahun');
       const years = new Set();
@@ -725,54 +922,6 @@
       } else {
         filterTahun.value = currentYear;
       }
-    }
-
-    function loadDataFromServer() {
-      document.getElementById('loading-overlay').style.display = 'flex';
-      
-      fetch(API_URL, { redirect: 'follow' })
-        .then(response => response.text())
-        .then(text => {
-          let result;
-          try {
-            result = JSON.parse(text);
-          } catch (e) {
-            console.error("Respon tidak valid:", text);
-            throw new Error("Gagal membaca data dari server. Pastikan API_URL benar dan Web App diset ke 'Anyone'.");
-          }
-
-          if (result.status === 'success') {
-            dbKuitansi = result.data || [];
-            
-            renderHistory(); 
-            updateDashboardStats();
-            populateYearDropdown();
-            applyFilterLaporan();
-
-            setTanggalHariIni(); updateGeneratedId();
-            
-            // Pengaturan bendahara dari Database
-            if (result.pengaturan) {
-              document.getElementById('settingNamaTtd').value = result.pengaturan.nama;
-              document.getElementById('settingNipTtd').value = result.pengaturan.nip;
-              updateTtdUI();
-
-              // Memuat Background dari Google Drive
-              currentBgUrl = result.pengaturan.bgUrl;
-              if(currentBgUrl && currentBgUrl !== "") {
-                applyBlankoBackground(currentBgUrl);
-              }
-            }
-          } else {
-            alert("Gagal memuat data dari server: " + result.message);
-          }
-        })
-        .catch(err => {
-          alert("Terjadi kesalahan jaringan: " + err.message);
-        })
-        .finally(() => {
-          document.getElementById('loading-overlay').style.display = 'none';
-        });
     }
 
     function updateDashboardStats() {
@@ -842,16 +991,18 @@
       if(!sourceStr) return;
       
       let finalUrl = sourceStr;
-      // Memperbaiki link Google Drive agar bisa dirender sebagai background image (Bypass CORS blocker)
+      
+      // SOLUSI BYPASS CORS GOOGLE DRIVE (MENGGUNAKAN lh3.googleusercontent.com)
       if (finalUrl.includes('drive.google.com') && finalUrl.includes('id=')) {
           const match = finalUrl.match(/id=([a-zA-Z0-9_-]+)/);
           if (match && match[1]) {
-              finalUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w2000`;
+              finalUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
           }
       }
       
       bgDiv.style.backgroundImage = `url('${finalUrl}')`;
-      bgDiv.innerHTML = ''; bgDiv.classList.remove('bg-slate-100', 'border-dashed');
+      bgDiv.innerHTML = ''; 
+      bgDiv.classList.remove('bg-slate-100', 'border-dashed');
     }
 
     function simpanPengaturanKeDB() {
@@ -861,9 +1012,11 @@
       
       const nama = document.getElementById('settingNamaTtd').value;
       const nip = document.getElementById('settingNipTtd').value;
+      const userLogin = document.getElementById('settingUser').value || 'admin';
+      const passLogin = document.getElementById('settingPass').value || 'admin123';
       
       document.getElementById('loading-overlay').style.display = 'flex';
-      document.getElementById('loading-text').innerText = pendingBgBase64 ? "Menyimpan Data Bendahara & Background ke Database..." : "Menyimpan Data Bendahara ke Database...";
+      document.getElementById('loading-text').innerText = pendingBgBase64 ? "Menyimpan Pengaturan & Mengunggah Background..." : "Menyimpan Pengaturan ke Database...";
       
       const payload = { 
         action: 'save_pengaturan', 
@@ -872,7 +1025,9 @@
         bgBase64: pendingBgBase64,
         bgMimeType: pendingBgMimeType,
         bgFileName: pendingBgFileName,
-        clearBg: isBgCleared
+        clearBg: isBgCleared,
+        userLogin: userLogin,
+        passLogin: passLogin
       };
 
       fetch(API_URL, {
@@ -887,12 +1042,11 @@
         try {
           result = JSON.parse(text);
         } catch (e) {
-          console.error("Server HTML Response:", text);
-          throw new Error("Server gagal mengembalikan JSON. Jika Anda mengaktifkan upload Google Drive, pastikan Anda sudah melakukan Deploy sebagai 'New Deployment' dan mengizinkan otorisasi Drive.");
+          throw new Error("Server gagal mengembalikan JSON. Pastikan sudah Deploy versi baru.");
         }
 
         if(result.status === 'success') {
-          alert("✅ Data Bendahara & Background berhasil disimpan permanen ke Database!");
+          alert("✅ Pengaturan, Kredensial Login & Background berhasil disimpan permanen ke Database!");
           
           pendingBgBase64 = "";
           isBgCleared = false;
@@ -901,7 +1055,7 @@
             applyBlankoBackground(currentBgUrl);
           }
         } else {
-          alert("Gagal menyimpan ke server: " + result.message + "\n\nSolusi: Jika ini tentang izin Google Drive, lakukan 'New Deployment' di Apps Script.");
+          alert("Gagal menyimpan ke server: " + result.message);
         }
       })
       .catch(err => alert("Terjadi kesalahan sistem/jaringan: " + err.message))
@@ -1051,7 +1205,7 @@
           result = JSON.parse(text);
         } catch (e) {
           console.error("Server HTML Response:", text);
-          throw new Error("Server gagal mengembalikan JSON. Jika Anda mengaktifkan upload Lampiran ke Google Drive, pastikan Anda sudah melakukan Deploy sebagai 'New Deployment' dan mengizinkan otorisasi Drive.");
+          throw new Error("Server gagal mengembalikan JSON. Jika Anda mengaktifkan upload Lampiran ke Google Drive, pastikan Anda sudah melakukan Deploy sebagai 'New Deployment'.");
         }
 
         if(result.status === 'success') {
@@ -1377,6 +1531,9 @@
       
       tambahBarisPengujian(); 
     }
+
+    // Eksekusi Pengecekan Auth saat halaman dimuat
+    checkAuth();
   </script>
 </body>
 </html>
