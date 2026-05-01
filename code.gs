@@ -44,7 +44,7 @@ function setupSheet() {
   try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
   
   if (!ss) {
-    if (SPREADSHEET_ID === "1wnoKPdmHYx97GrmMOUjKuwvqJA4rADT9xTFhJKaOU0g" || SPREADSHEET_ID === "") {
+    if (SPREADSHEET_ID === "MASUKKAN_ID_SPREADSHEET_ANDA_DISINI" || SPREADSHEET_ID === "") {
       throw new Error("⚠️ SPREADSHEET_ID BELUM DIISI DI SCRIPT!");
     }
     ss = SpreadsheetApp.openById(SPREADSHEET_ID.trim());
