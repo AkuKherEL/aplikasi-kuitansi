@@ -208,9 +208,17 @@
             </div>
           </div>
           
-          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-            <label class="block text-sm font-bold text-slate-700 mb-2">Berdasarkan Surat Permintaan No.</label>
-            <input type="text" id="noSurat" class="w-full bg-white border border-slate-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-700 shadow-sm" placeholder="Contoh: 001/SP/2026 (Opsional)">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+              <label class="block text-sm font-bold text-slate-700 mb-2">Berdasarkan Surat Permintaan No.</label>
+              <input type="text" id="noSurat" class="w-full bg-white border border-slate-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium text-slate-700 shadow-sm" placeholder="Contoh: 001/SP/2026 (Opsional)">
+            </div>
+            
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 relative">
+              <label class="block text-sm font-bold text-slate-700 mb-2">Dokumen Pendukung <span class="text-xs font-normal text-slate-400">(Opsional)</span></label>
+              <input type="file" id="fileDokumen" accept=".pdf, image/*" onchange="handleUploadDokumen(event)" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition cursor-pointer">
+              <p class="text-xs text-slate-400 mt-2 font-medium">Maks 2MB (PDF/JPG/PNG). Akan diunggah otomatis ke Google Drive.</p>
+            </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-4 pt-6 border-t border-slate-100">
@@ -233,7 +241,7 @@
       <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
         <div class="flex items-center gap-3 mb-6">
           <div class="h-6 w-2 bg-slate-300 rounded-full"></div>
-          <h2 class="text-xl font-bold text-slate-800">Riwayat Terakhir <span class="text-xs font-normal text-slate-400 ml-2">(Tersinkron dengan Google Sheets)</span></h2>
+          <h2 class="text-xl font-bold text-slate-800">Riwayat Terakhir</h2>
         </div>
         
         <div class="overflow-x-auto rounded-2xl border border-slate-100">
@@ -305,9 +313,10 @@
         </p>
       </div>
       
-      <div class="mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200 border-dashed">
+      <div class="mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200 border-dashed relative">
         <label class="block text-sm font-bold text-slate-700 mb-3">Unggah Scan/Foto Kertas Blangko Kosong</label>
         <input type="file" id="uploadBlanko" accept="image/*" onchange="handleUploadBlanko(event)" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition cursor-pointer">
+        <p class="text-xs text-slate-400 mt-2 font-medium">Background ini akan tersimpan ke Database agar bisa diakses dari perangkat lain.</p>
       </div>
       
       <div class="flex flex-wrap gap-3 items-center">
@@ -321,12 +330,17 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
             <label class="block text-sm font-bold text-slate-700 mb-2">Nama Bendahara</label>
-            <input type="text" id="settingNamaTtd" oninput="simpanPengaturanTtd()" class="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold" placeholder="Contoh: Budi Santoso, S.T.">
+            <input type="text" id="settingNamaTtd" oninput="updateTtdUI()" value="CHAIRULLAH MUHAMMAD, A.MD" class="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold" placeholder="Contoh: Budi Santoso, S.T.">
           </div>
           <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
             <label class="block text-sm font-bold text-slate-700 mb-2">NIP</label>
-            <input type="text" id="settingNipTtd" oninput="simpanPengaturanTtd()" class="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold tracking-wide" placeholder="Contoh: 19800101 200501 1 001">
+            <input type="text" id="settingNipTtd" oninput="updateTtdUI()" value="19840110 200604 1 006" class="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-semibold tracking-wide" placeholder="Contoh: 19800101 200501 1 001">
           </div>
+        </div>
+        <div class="mt-5">
+          <button type="button" onclick="simpanPengaturanKeDB()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-sm flex items-center gap-2">
+            💾 Simpan Data Bendahara & Background ke Database
+          </button>
         </div>
       </div>
     </div>
@@ -336,7 +350,6 @@
 
   <!-- PRINT LAPORAN BUKU BESAR -->
   <div id="print-laporan" class="w-full font-serif text-black bg-white">
-    <!-- KOP SURAT DENGAN LOGO -->
     <div class="flex items-center mb-4 border-b-4 border-double border-black pb-4 font-sans">
       <div class="w-20 sm:w-24 flex-shrink-0">
         <img src="https://disdagprovkalsel.com/img/logo_disdagprovkalsel.png" alt="Logo Pemprov Kalsel" class="w-full h-auto object-contain">
@@ -376,7 +389,6 @@
       </tfoot>
     </table>
 
-    <!-- KOTAK TANDA TANGAN LAPORAN -->
     <div class="mt-12 flex justify-end">
       <div class="text-center min-w-[16rem]">
         <p class="whitespace-nowrap">Banjarmasin, <span id="tglPrintLaporan"></span></p>
@@ -444,6 +456,16 @@
     // --- State Management ---
     let dbKuitansi = [];
     let currentPreviewData = null; 
+    let base64Dokumen = "";
+    let namaFileDokumen = "";
+    let mimeTypeDokumen = "";
+
+    // State Upload Background
+    let pendingBgBase64 = "";
+    let pendingBgMimeType = "";
+    let pendingBgFileName = "";
+    let isBgCleared = false;
+    let currentBgUrl = "";
     
     const defaultCoords = {
       valId: { top: 20.5, left: 168, fontSize: 16 }, 
@@ -459,7 +481,27 @@
       valTtdNip: { top: 135, left: 145, fontSize: 15 }
     };
 
-    // --- Format Rupiah Global function ---
+    function handleUploadDokumen(event) {
+      const file = event.target.files[0];
+      if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+          alert("Gagal: Ukuran file terlalu besar! Maksimal 2MB.");
+          event.target.value = '';
+          base64Dokumen = ""; namaFileDokumen = ""; mimeTypeDokumen = "";
+          return;
+        }
+        namaFileDokumen = file.name;
+        mimeTypeDokumen = file.type;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          base64Dokumen = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        base64Dokumen = ""; namaFileDokumen = ""; mimeTypeDokumen = "";
+      }
+    }
+
     function formatRpNumber(angka) {
       let number_string = angka.toString().replace(/[^,\d]/g, '');
       let split = number_string.split(',');
@@ -471,7 +513,6 @@
       return rupiah + ',' + desimal;
     }
 
-    // --- KERANJANG PENGUJIAN DINAMIS ---
     const daftarProduk = [
       { grup: "Daftar Mix Formula (DMF)", isUji: false, items: [
         { nama: "DMF LPA KELAS A", harga: 2935000 },
@@ -597,16 +638,13 @@
     }
 
     // --- Inisialisasi ---
-    loadBlankoBackground();
     loadTextCoordinates();
-    loadPengaturanTtd();
+    updateTtdUI();
     tambahBarisPengujian(); 
 
-    // LOAD DATA DENGAN SISTEM FETCH (UNTUK VERCEL API)
     if(API_URL !== "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
       loadDataFromServer();
     } else {
-      // Data dummy untuk pengembangan awal bila API_URL belum diisi
       console.warn("⚠️ API_URL belum diisi! Menjalankan mode offline dengan data dummy.");
       setTanggalHariIni(); updateGeneratedId();
     }
@@ -621,6 +659,19 @@
             dbKuitansi = result.data || [];
             renderHistory(); renderBukuBesar();
             setTanggalHariIni(); updateGeneratedId();
+            
+            // Menerima pengaturan bendahara & background dari Database
+            if (result.pengaturan) {
+              document.getElementById('settingNamaTtd').value = result.pengaturan.nama;
+              document.getElementById('settingNipTtd').value = result.pengaturan.nip;
+              updateTtdUI();
+
+              // Memuat Background dari Google Drive (jika ada)
+              currentBgUrl = result.pengaturan.bgUrl;
+              if(currentBgUrl && currentBgUrl !== "") {
+                applyBlankoBackground(currentBgUrl);
+              }
+            }
           } else {
             alert("Gagal memuat data dari server: " + result.message);
           }
@@ -633,11 +684,9 @@
         });
     }
 
-    function simpanPengaturanTtd() {
+    function updateTtdUI() {
       const nama = document.getElementById('settingNamaTtd').value;
       const nip = document.getElementById('settingNipTtd').value;
-      localStorage.setItem('ttd_nama', nama);
-      localStorage.setItem('ttd_nip', nip);
       
       const lapNama = document.getElementById('lapTtdNama');
       const lapNip = document.getElementById('lapTtdNip');
@@ -650,12 +699,95 @@
       if(valNip) valNip.innerText = nip ? 'NIP. ' + nip : '';
     }
 
-    function loadPengaturanTtd() {
-      const nama = localStorage.getItem('ttd_nama') || '';
-      const nip = localStorage.getItem('ttd_nip') || '';
-      if(document.getElementById('settingNamaTtd')) document.getElementById('settingNamaTtd').value = nama;
-      if(document.getElementById('settingNipTtd')) document.getElementById('settingNipTtd').value = nip;
-      simpanPengaturanTtd();
+    // --- MANAJEMEN BACKGROUND IMAGE ---
+    function handleUploadBlanko(event) {
+      const file = event.target.files[0];
+      if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+          alert("Gagal: Ukuran file terlalu besar! Maksimal 2MB.");
+          event.target.value = '';
+          return;
+        }
+        pendingBgFileName = file.name;
+        pendingBgMimeType = file.type;
+        isBgCleared = false;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          pendingBgBase64 = e.target.result;
+          applyBlankoBackground(e.target.result); // Tampilkan Preview Langsung
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function hapusBlanko() {
+      isBgCleared = true;
+      pendingBgBase64 = "";
+      currentBgUrl = "";
+      
+      const bgDiv = document.getElementById('bg-blanko');
+      bgDiv.style.backgroundImage = 'none';
+      bgDiv.classList.add('bg-slate-100', 'border-dashed');
+      bgDiv.innerHTML = `<div class="text-center p-6 bg-white/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200"><div class="text-3xl mb-2">📸</div><p class="text-slate-500 font-bold mb-1">Background Blanko Kosong</p><p class="text-xs text-slate-400">Unggah foto blangko di menu "Kalibrasi"</p></div>`;
+      document.getElementById('uploadBlanko').value = '';
+    }
+
+    function applyBlankoBackground(sourceStr) {
+      const bgDiv = document.getElementById('bg-blanko');
+      if(sourceStr) {
+        bgDiv.style.backgroundImage = `url('${sourceStr}')`;
+        bgDiv.innerHTML = ''; bgDiv.classList.remove('bg-slate-100', 'border-dashed');
+      }
+    }
+
+    function simpanPengaturanKeDB() {
+      if(API_URL === "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
+        alert("Peringatan: URL API Belum Disetel."); return;
+      }
+      
+      const nama = document.getElementById('settingNamaTtd').value;
+      const nip = document.getElementById('settingNipTtd').value;
+      
+      document.getElementById('loading-overlay').style.display = 'flex';
+      document.getElementById('loading-text').innerText = pendingBgBase64 ? "Mengunggah Background & Menyimpan pengaturan..." : "Menyimpan pengaturan ke Database...";
+      
+      const payload = { 
+        action: 'save_pengaturan', 
+        nama: nama, 
+        nip: nip,
+        bgBase64: pendingBgBase64,
+        bgMimeType: pendingBgMimeType,
+        bgFileName: pendingBgFileName,
+        clearBg: isBgCleared
+      };
+
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.json())
+      .then(result => {
+        if(result.status === 'success') {
+          alert("✅ Data Bendahara & Background berhasil disimpan permanen ke Google Sheets!");
+          
+          // Reset pending states
+          pendingBgBase64 = "";
+          isBgCleared = false;
+          currentBgUrl = result.pengaturan.bgUrl;
+          if (currentBgUrl && currentBgUrl !== "") {
+            applyBlankoBackground(currentBgUrl);
+          }
+        } else {
+          alert("Gagal menyimpan ke server: " + result.message);
+        }
+      })
+      .catch(err => alert("Terjadi kesalahan jaringan: " + err.message))
+      .finally(() => {
+        document.getElementById('loading-overlay').style.display = 'none';
+        document.getElementById('loading-text').innerText = "Menyinkronkan Database...";
+      });
     }
 
     function formatRupiah(obj) {
@@ -722,11 +854,13 @@
         jumlahRp: valJumlah,
         terbilang: document.getElementById('terbilang').value || '.......................................................',
         keperluan: document.getElementById('keperluan').value,
-        noSurat: document.getElementById('noSurat').value
+        noSurat: document.getElementById('noSurat').value,
+        fileBase64: base64Dokumen,
+        fileName: namaFileDokumen,
+        mimeType: mimeTypeDokumen
       };
     }
 
-    // --- Preview & Save Logic ---
     function previewForm() {
       const form = document.getElementById('kuitansiForm');
       if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -768,11 +902,15 @@
       }
 
       document.getElementById('loading-overlay').style.display = 'flex';
-      document.getElementById('loading-text').innerText = "Menyimpan ke Database...";
+      
+      if(data.fileBase64 && data.fileBase64 !== "") {
+        document.getElementById('loading-text').innerText = "Mengunggah Lampiran ke Google Drive & Menyimpan data...";
+      } else {
+        document.getElementById('loading-text').innerText = "Menyimpan ke Database...";
+      }
       
       fetch(API_URL, {
         method: 'POST',
-        // Menggunakan text/plain untuk melewati batasan validasi CORS Apps Script
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(data)
       })
@@ -782,9 +920,7 @@
           dbKuitansi.unshift(result.data);
           renderHistory(); renderBukuBesar(); resetForm();
           
-          // Notifikasi visual bahwa data sukses tersimpan di Google Sheets
           alert("✅ Data berhasil disimpan ke Database Google Sheets!");
-          
           if(laluCetak) cetakKuitansiFisik();
         } else {
           alert("Gagal menyimpan ke server: " + result.message);
@@ -845,7 +981,7 @@
       document.getElementById('valTglHariBulan').innerText = tglBulanSaja;
       document.getElementById('valTglTahun').innerText = tahunSaja;
       
-      simpanPengaturanTtd();
+      updateTtdUI();
     }
 
     // --- Drag & Drop Kalibrasi ---
@@ -979,39 +1115,6 @@
       }
     }
 
-    function handleUploadBlanko(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          localStorage.setItem('blanko_image', e.target.result); 
-          applyBlankoBackground(e.target.result);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function applyBlankoBackground(base64Image) {
-      const bgDiv = document.getElementById('bg-blanko');
-      if(base64Image) {
-        bgDiv.style.backgroundImage = `url('${base64Image}')`;
-        bgDiv.innerHTML = ''; bgDiv.classList.remove('bg-slate-100', 'border-dashed');
-      }
-    }
-
-    function loadBlankoBackground() {
-      const savedBg = localStorage.getItem('blanko_image');
-      if (savedBg) applyBlankoBackground(savedBg);
-    }
-
-    function hapusBlanko() {
-      localStorage.removeItem('blanko_image');
-      const bgDiv = document.getElementById('bg-blanko');
-      bgDiv.style.backgroundImage = 'none'; bgDiv.classList.add('bg-slate-100', 'border-dashed');
-      bgDiv.innerHTML = `<div class="text-center p-6 bg-white/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200"><div class="text-3xl mb-2">📸</div><p class="text-slate-500 font-bold mb-1">Background Blanko Kosong</p><p class="text-xs text-slate-400">Unggah foto blangko di menu "Kalibrasi"</p></div>`;
-      document.getElementById('uploadBlanko').value = '';
-    }
-
     function renderHistory() {
       const tbody = document.getElementById('tableBody'); const emptyState = document.getElementById('emptyState');
       tbody.innerHTML = '';
@@ -1024,7 +1127,11 @@
           const tr = document.createElement('tr'); tr.className = "hover:bg-slate-50/50 transition-colors";
           tr.innerHTML = `
             <td class="px-5 py-4 font-bold text-slate-800 whitespace-nowrap">${item.id} <br><span class="text-xs font-normal text-slate-500">${item.tglBiasa}</span></td>
-            <td class="px-5 py-4"><div class="font-bold text-slate-700">${item.nama}</div><div class="text-xs text-slate-500 line-clamp-1 truncate max-w-xs mt-1" title="${item.keperluan}">${item.keperluan}</div></td>
+            <td class="px-5 py-4">
+              <div class="font-bold text-slate-700">${item.nama}</div>
+              <div class="text-xs text-slate-500 line-clamp-1 truncate max-w-xs mt-1" title="${item.keperluan}">${item.keperluan}</div>
+              ${item.fileUrl ? `<a href="${item.fileUrl}" target="_blank" class="text-xs text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-1 mt-1 font-bold">📄 Lihat Dokumen</a>` : ''}
+            </td>
             <td class="px-5 py-4 font-extrabold text-indigo-700">Rp ${displayRp}</td>
             <td class="px-5 py-4 text-right"><button onclick='previewHistory(${index})' class="bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm">Preview</button></td>`;
           tbody.appendChild(tr);
@@ -1045,7 +1152,17 @@
         totalPenerimaan += nominal; saldoRunning += nominal; 
         
         const tr = document.createElement('tr'); tr.className = "hover:bg-slate-50/50 transition-colors";
-        tr.innerHTML = `<td class="px-4 py-3 border-r border-slate-200 text-center font-medium">${index + 1}</td><td class="px-4 py-3 border-r border-slate-200 whitespace-nowrap text-slate-600">${item.tglBiasa}</td><td class="px-4 py-3 border-r border-slate-200 whitespace-nowrap font-medium text-slate-700">${item.id}</td><td class="px-4 py-3 border-r border-slate-200"><div class="font-bold text-slate-800">${item.nama}</div><div class="text-xs text-slate-500 mt-0.5">${item.keperluan || 'Hasil Pengujian'}</div></td><td class="px-4 py-3 border-r border-slate-200 text-right font-semibold text-slate-700">${formatRpNumber(nominal)}</td><td class="px-4 py-3 text-right font-extrabold text-indigo-700">${formatRpNumber(saldoRunning)}</td>`;
+        tr.innerHTML = `
+          <td class="px-4 py-3 border-r border-slate-200 text-center font-medium">${index + 1}</td>
+          <td class="px-4 py-3 border-r border-slate-200 whitespace-nowrap text-slate-600">${item.tglBiasa}</td>
+          <td class="px-4 py-3 border-r border-slate-200 whitespace-nowrap font-medium text-slate-700">${item.id}</td>
+          <td class="px-4 py-3 border-r border-slate-200">
+            <div class="font-bold text-slate-800">${item.nama}</div>
+            <div class="text-xs text-slate-500 mt-0.5">${item.keperluan || 'Hasil Pengujian'}</div>
+            ${item.fileUrl ? `<a href="${item.fileUrl}" target="_blank" class="text-xs text-blue-500 hover:underline mt-1 inline-block font-bold">📄 Lampiran</a>` : ''}
+          </td>
+          <td class="px-4 py-3 border-r border-slate-200 text-right font-semibold text-slate-700">${formatRpNumber(nominal)}</td>
+          <td class="px-4 py-3 text-right font-extrabold text-indigo-700">${formatRpNumber(saldoRunning)}</td>`;
         tbody.appendChild(tr);
 
         const trPrint = document.createElement('tr');
@@ -1084,6 +1201,10 @@
       document.getElementById('kuitansiForm').reset(); 
       document.getElementById('terbilang').value = ''; 
       document.getElementById('containerPengujian').innerHTML = '';
+      
+      base64Dokumen = "";
+      namaFileDokumen = "";
+      mimeTypeDokumen = "";
       
       setTanggalHariIni();
       updateGeneratedId();
