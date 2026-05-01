@@ -6,7 +6,7 @@ var SPREADSHEET_ID = "1wnoKPdmHYx97GrmMOUjKuwvqJA4rADT9xTFhJKaOU0g";
 function doGet(e) {
   try {
     var data = getAllData();
-    var pengaturan = getPengaturan(); // Ambil pengaturan dari sheet
+    var pengaturan = getPengaturan();
     return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: data, pengaturan: pengaturan }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
@@ -19,9 +19,9 @@ function doPost(e) {
   try {
     var payload = JSON.parse(e.postData.contents);
     
-    // Pengecekan jika request adalah menyimpan Pengaturan Bendahara
+    // Pengecekan jika request adalah menyimpan Pengaturan Bendahara & Background
     if (payload.action === 'save_pengaturan') {
-      var savedPengaturan = simpanPengaturanDb(payload.nama, payload.nip);
+      var savedPengaturan = simpanPengaturanDb(payload);
       return ContentService.createTextOutput(JSON.stringify({ status: 'success', pengaturan: savedPengaturan }))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -37,7 +37,7 @@ function doPost(e) {
 }
 
 // =====================================================================
-// FUNGSI PENGATURAN BENDAHARA (DISIMPAN KE SHEET BARU)
+// FUNGSI PENGATURAN BENDAHARA & BACKGROUND BLANGKO
 // =====================================================================
 function setupPengaturanSheet() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID.trim());
@@ -45,27 +45,45 @@ function setupPengaturanSheet() {
   
   if (!sheet) {
     sheet = ss.insertSheet('pengaturan');
-    sheet.appendRow(['Nama Bendahara', 'NIP Bendahara']);
-    // Data bawaan sesuai gambar Anda
-    sheet.appendRow(['CHAIRULLAH MUHAMMAD, A.MD', '19840110 200604 1 006']);
-    sheet.getRange('A1:B1').setFontWeight('bold').setBackground('#d0e0e3');
+    sheet.appendRow(['Nama Bendahara', 'NIP Bendahara', 'URL Background']);
+    sheet.appendRow(['CHAIRULLAH MUHAMMAD, A.MD', '19840110 200604 1 006', '']);
+    sheet.getRange('A1:C1').setFontWeight('bold').setBackground('#d0e0e3');
   }
   return sheet;
 }
 
 function getPengaturan() {
   var sheet = setupPengaturanSheet();
-  var data = sheet.getRange(2, 1, 1, 2).getValues()[0];
+  var data = sheet.getRange(2, 1, 1, 3).getValues()[0];
   return { 
     nama: data[0] || 'CHAIRULLAH MUHAMMAD, A.MD', 
-    nip: data[1] || '19840110 200604 1 006' 
+    nip: data[1] || '19840110 200604 1 006',
+    bgUrl: data[2] || ''
   };
 }
 
-function simpanPengaturanDb(nama, nip) {
+function simpanPengaturanDb(payload) {
   var sheet = setupPengaturanSheet();
-  sheet.getRange(2, 1, 1, 2).setValues([[nama, nip]]);
-  return { nama: nama, nip: nip };
+  var currentData = sheet.getRange(2, 1, 1, 3).getValues()[0];
+  var finalBgUrl = currentData[2] || '';
+
+  if (payload.clearBg) {
+    finalBgUrl = '';
+  } 
+  else if (payload.bgBase64 && payload.bgBase64 !== "") {
+    try {
+      var base64Data = payload.bgBase64.split(",")[1];
+      var blob = Utilities.newBlob(Utilities.base64Decode(base64Data), payload.bgMimeType, payload.bgFileName);
+      var file = DriveApp.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      finalBgUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
+    } catch (e) {
+      throw new Error("Gagal upload background ke Drive: " + e.message);
+    }
+  }
+
+  sheet.getRange(2, 1, 1, 3).setValues([[payload.nama, payload.nip, finalBgUrl]]);
+  return { nama: payload.nama, nip: payload.nip, bgUrl: finalBgUrl };
 }
 
 // =====================================================================
@@ -90,7 +108,6 @@ function simpanData(data) {
   }
   
   var fileUrl = "";
-  // PROSES UPLOAD FILE KE GOOGLE DRIVE
   if (data.fileBase64 && data.fileBase64 !== "") {
     try {
       var base64Data = data.fileBase64.split(",")[1];
