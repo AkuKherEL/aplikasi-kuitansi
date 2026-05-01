@@ -781,6 +781,10 @@
         if(result.status === 'success') {
           dbKuitansi.unshift(result.data);
           renderHistory(); renderBukuBesar(); resetForm();
+          
+          // Notifikasi visual bahwa data sukses tersimpan di Google Sheets
+          alert("✅ Data berhasil disimpan ke Database Google Sheets!");
+          
           if(laluCetak) cetakKuitansiFisik();
         } else {
           alert("Gagal menyimpan ke server: " + result.message);
