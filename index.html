@@ -170,6 +170,7 @@
             <input type="text" id="nama" required class="w-full bg-white border border-slate-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium placeholder-slate-400 text-slate-800 shadow-sm" placeholder="Contoh: CV. Bangun Persada...">
           </div>
 
+          <!-- DROPDOWN PILIHAN PRODUK PENGUJIAN -->
           <div class="bg-gradient-to-br from-indigo-50/50 to-blue-50/50 border border-indigo-100 p-6 rounded-2xl shadow-sm">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
               <div>
@@ -266,10 +267,33 @@
           <h2 class="text-2xl font-extrabold text-slate-800">Buku Besar Penerimaan</h2>
           <p class="text-slate-500 text-sm mt-1">Laporan rekapitulasi seluruh retribusi.</p>
         </div>
-        <button onclick="cetakBukuBesar()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg> Cetak Laporan
-        </button>
+        
+        <!-- FILTER BULAN & TAHUN -->
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="filterBulan" onchange="applyFilterLaporan()" class="border border-slate-200 px-3 py-2 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none">
+            <option value="ALL">Semua Bulan</option>
+            <option value="1">Januari</option>
+            <option value="2">Februari</option>
+            <option value="3">Maret</option>
+            <option value="4">April</option>
+            <option value="5">Mei</option>
+            <option value="6">Juni</option>
+            <option value="7">Juli</option>
+            <option value="8">Agustus</option>
+            <option value="9">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Desember</option>
+          </select>
+          <select id="filterTahun" onchange="applyFilterLaporan()" class="border border-slate-200 px-3 py-2 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none">
+            <option value="ALL">Semua Tahun</option>
+          </select>
+          <button onclick="cetakBukuBesar()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center gap-2 ml-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg> Cetak Laporan
+          </button>
+        </div>
       </div>
+      
       <div class="overflow-x-auto rounded-2xl border border-slate-200">
         <table class="w-full text-sm text-left">
           <thead class="text-xs text-slate-600 uppercase bg-slate-100 border-b border-slate-200">
@@ -285,7 +309,7 @@
           <tbody id="tableBukuBesar" class="divide-y divide-slate-200"></tbody>
           <tfoot class="bg-slate-50 font-extrabold text-slate-800 border-t-2 border-slate-300">
             <tr>
-              <td colspan="4" class="px-4 py-5 text-right border-r border-slate-300 uppercase tracking-wide">TOTAL PENERIMAAN</td>
+              <td colspan="4" class="px-4 py-5 text-right border-r border-slate-300 uppercase tracking-wide">TOTAL PENERIMAAN PERIODE INI</td>
               <td id="totalPenerimaan" class="px-4 py-5 text-right border-r border-slate-300 text-indigo-700 text-lg">0</td>
               <td id="totalSaldo" class="px-4 py-5 text-right text-emerald-600 text-lg">0</td>
             </tr>
@@ -365,7 +389,7 @@
     
     <!-- JUDUL LAPORAN -->
     <div class="text-center mb-6">
-      <h4 class="text-lg font-bold">BUKU BESAR PENERIMAAN RETRIBUSI TAHUN <span id="tahunLaporan">2026</span></h4>
+      <h4 class="text-lg font-bold">BUKU BESAR PENERIMAAN RETRIBUSI <br><span id="periodeLaporanTeks">TAHUN 2026</span></h4>
     </div>
     
     <table class="w-full text-sm text-left border-collapse border border-black">
@@ -382,7 +406,7 @@
       <tbody id="printTableBukuBesar"></tbody>
       <tfoot class="font-bold bg-gray-100">
         <tr>
-          <td colspan="4" class="px-3 py-2 border border-black text-right">TOTAL PENERIMAAN</td>
+          <td colspan="4" class="px-3 py-2 border border-black text-right">TOTAL PENERIMAAN PERIODE INI</td>
           <td id="printTotalPenerimaan" class="px-3 py-2 border border-black text-right">0</td>
           <td id="printTotalSaldo" class="px-3 py-2 border border-black text-right">0</td>
         </tr>
@@ -599,7 +623,6 @@
           const selectedOption = select.options[select.selectedIndex];
           const namaPengujian = selectedOption.getAttribute('data-nama');
           
-          // Menambahkan harga @ satuan di dalam kurung tanpa kata UJI
           rincianKeperluan.push(`${namaPengujian} (${qty} Sampel @ Rp ${formatRpNumber(harga)})`);
         } else {
           subtotalText.innerText = 'Rp 0,00';
@@ -656,6 +679,33 @@
       setTanggalHariIni(); updateGeneratedId();
     }
 
+    function populateYearDropdown() {
+      const filterTahun = document.getElementById('filterTahun');
+      const years = new Set();
+      dbKuitansi.forEach(item => {
+        if(item.tglBiasa) {
+          const parts = item.tglBiasa.split('/');
+          if(parts.length === 3) years.add(parts[2]);
+        }
+      });
+      const currentYear = new Date().getFullYear().toString();
+      years.add(currentYear);
+
+      const currentVal = filterTahun.value || currentYear;
+      
+      let options = '<option value="ALL">Semua Tahun</option>';
+      Array.from(years).sort().reverse().forEach(y => {
+        options += `<option value="${y}">${y}</option>`;
+      });
+      filterTahun.innerHTML = options;
+      
+      if(Array.from(years).includes(currentVal)) {
+        filterTahun.value = currentVal;
+      } else {
+        filterTahun.value = currentYear;
+      }
+    }
+
     function loadDataFromServer() {
       document.getElementById('loading-overlay').style.display = 'flex';
       
@@ -664,7 +714,12 @@
         .then(result => {
           if (result.status === 'success') {
             dbKuitansi = result.data || [];
-            renderHistory(); renderBukuBesar();
+            
+            renderHistory(); 
+            updateDashboardStats();
+            populateYearDropdown();
+            applyFilterLaporan();
+
             setTanggalHariIni(); updateGeneratedId();
             
             // Database ninda Bendahara mattu Background settings sweekarisidaga
@@ -689,6 +744,19 @@
         .finally(() => {
           document.getElementById('loading-overlay').style.display = 'none';
         });
+    }
+
+    function updateDashboardStats() {
+      let totalPenerimaan = 0;
+      dbKuitansi.forEach(item => {
+        let nominal = parseInt((item.jumlahRp || "0").replace(/\./g, '')) || 0;
+        totalPenerimaan += nominal;
+      });
+
+      if(document.getElementById('statTotalKuitansi')) {
+        document.getElementById('statTotalKuitansi').innerText = dbKuitansi.length;
+        document.getElementById('statTotalPenerimaan').innerText = 'Rp ' + formatRpNumber(totalPenerimaan);
+      }
     }
 
     function updateTtdUI() {
@@ -902,7 +970,11 @@
       if(API_URL === "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_ANDA_DISINI") {
         alert("Peringatan: URL API Belum Disetel. Data hanya akan tersimpan sementara di layar Anda.");
         dbKuitansi.unshift(data);
-        renderHistory(); renderBukuBesar(); resetForm();
+        renderHistory(); 
+        updateDashboardStats();
+        populateYearDropdown();
+        applyFilterLaporan();
+        resetForm();
         if(laluCetak) cetakKuitansiFisik();
         return;
       }
@@ -924,7 +996,11 @@
       .then(result => {
         if(result.status === 'success') {
           dbKuitansi.unshift(result.data);
-          renderHistory(); renderBukuBesar(); resetForm();
+          renderHistory(); 
+          updateDashboardStats();
+          populateYearDropdown();
+          applyFilterLaporan(); 
+          resetForm();
           
           alert("✅ Data berhasil disimpan ke Database Google Sheets!");
           if(laluCetak) cetakKuitansiFisik();
@@ -1177,12 +1253,44 @@
       }
     }
 
-    function renderBukuBesar() {
+    function applyFilterLaporan() {
+      const fBulan = document.getElementById('filterBulan').value;
+      const fTahun = document.getElementById('filterTahun').value;
+
+      let filtered = [...dbKuitansi].reverse(); // Urutan dari terlama ke terbaru
+
+      if (fTahun !== 'ALL') {
+        filtered = filtered.filter(item => {
+          const parts = item.tglBiasa.split('/'); // Asumsi format DD/MM/YYYY
+          return parts[2] === fTahun;
+        });
+      }
+
+      if (fBulan !== 'ALL') {
+        filtered = filtered.filter(item => {
+          const parts = item.tglBiasa.split('/');
+          return parseInt(parts[1], 10) === parseInt(fBulan, 10);
+        });
+      }
+
+      // Update Teks Judul Cetak Laporan
+      let teksPeriode = "TAHUN " + (fTahun === 'ALL' ? "KESELURUHAN" : fTahun);
+      if (fBulan !== 'ALL') {
+        const selBulan = document.getElementById('filterBulan');
+        const namaBulan = selBulan.options[selBulan.selectedIndex].text;
+        teksPeriode = "BULAN " + namaBulan.toUpperCase() + " TAHUN " + (fTahun === 'ALL' ? "KESELURUHAN" : fTahun);
+      }
+      
+      document.getElementById('periodeLaporanTeks').innerText = teksPeriode;
+
+      renderTableBukuBesar(filtered);
+    }
+
+    function renderTableBukuBesar(dataBukuBesar) {
       const tbody = document.getElementById('tableBukuBesar');
       const printTbody = document.getElementById('printTableBukuBesar');
       tbody.innerHTML = ''; printTbody.innerHTML = '';
       
-      const dataBukuBesar = [...dbKuitansi].reverse(); 
       let saldoRunning = 0; let totalPenerimaan = 0;
 
       dataBukuBesar.forEach((item, index) => {
@@ -1212,13 +1320,7 @@
       document.getElementById('totalSaldo').innerText = 'Rp ' + formatRpNumber(saldoRunning);
       document.getElementById('printTotalPenerimaan').innerText = formatRpNumber(totalPenerimaan);
       document.getElementById('printTotalSaldo').innerText = formatRpNumber(saldoRunning);
-      document.getElementById('tahunLaporan').innerText = new Date().getFullYear();
       document.getElementById('tglPrintLaporan').innerText = formatTglIndo(new Date());
-
-      if(document.getElementById('statTotalKuitansi')) {
-        document.getElementById('statTotalKuitansi').innerText = dataBukuBesar.length;
-        document.getElementById('statTotalPenerimaan').innerText = 'Rp ' + formatRpNumber(totalPenerimaan);
-      }
     }
 
     function cetakBukuBesar() {
