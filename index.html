@@ -150,7 +150,6 @@
         
         <form id="kuitansiForm" class="space-y-7">
           
-          <!-- NO KUITANSI & TANGGAL -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
             <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 relative">
               <div class="absolute top-0 right-0 mt-3 mr-4 text-indigo-300 text-xs font-bold uppercase"># Nomor</div>
@@ -171,7 +170,6 @@
             <input type="text" id="nama" required class="w-full bg-white border border-slate-200 px-5 py-3.5 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none transition-all font-medium placeholder-slate-400 text-slate-800 shadow-sm" placeholder="Contoh: CV. Bangun Persada...">
           </div>
 
-          <!-- DROPDOWN PILIHAN PRODUK PENGUJIAN -->
           <div class="bg-gradient-to-br from-indigo-50/50 to-blue-50/50 border border-indigo-100 p-6 rounded-2xl shadow-sm">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
               <div>
@@ -350,6 +348,7 @@
 
   <!-- PRINT LAPORAN BUKU BESAR -->
   <div id="print-laporan" class="w-full font-serif text-black bg-white">
+    <!-- KOP SURAT DENGAN LOGO -->
     <div class="flex items-center mb-4 border-b-4 border-double border-black pb-4 font-sans">
       <div class="w-20 sm:w-24 flex-shrink-0">
         <img src="https://disdagprovkalsel.com/img/logo_disdagprovkalsel.png" alt="Logo Pemprov Kalsel" class="w-full h-auto object-contain">
@@ -364,6 +363,7 @@
       <div class="w-20 sm:w-24 flex-shrink-0"></div>
     </div>
     
+    <!-- JUDUL LAPORAN -->
     <div class="text-center mb-6">
       <h4 class="text-lg font-bold">BUKU BESAR PENERIMAAN RETRIBUSI TAHUN <span id="tahunLaporan">2026</span></h4>
     </div>
@@ -389,6 +389,7 @@
       </tfoot>
     </table>
 
+    <!-- KOTAK TANDA TANGAN LAPORAN -->
     <div class="mt-12 flex justify-end">
       <div class="text-center min-w-[16rem]">
         <p class="whitespace-nowrap">Banjarmasin, <span id="tglPrintLaporan"></span></p>
@@ -402,6 +403,7 @@
 
   <!-- PREVIEW & CETAK KUITANSI BLANGKO -->
   <div id="app-print">
+    <!-- Toolbar Preview -->
     <div class="no-print flex flex-col gap-4 mb-4 w-[210mm]">
       <div class="bg-slate-800 border border-slate-700 text-slate-100 p-5 rounded-2xl shadow-2xl flex items-center justify-between">
         <div>
@@ -420,7 +422,9 @@
       </div>
     </div>
     
+    <!-- Kertas Kuitansi -->
     <div class="kuitansi-kertas relative" style="width: 210mm; height: 160mm; overflow: hidden; padding: 0;">
+      <!-- IMAGE BACKGROUND BLANKO -->
       <div id="bg-blanko" class="cetak-hide absolute inset-0 z-0 bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300" style="background-size: 100% 100%; background-position: center; background-repeat: no-repeat;">
         <div class="text-center p-6 bg-white/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200">
           <div class="text-3xl mb-2">📸</div>
@@ -451,7 +455,7 @@
     // WAJIB DIISI SEBELUM DEPLOY KE VERCEL
     // Masukkan URL Web App Google Apps Script Anda pada variabel API_URL di bawah ini
     // =========================================================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbwdn0n1DjSKq8DW72iZ7wcsOCkIzxLzVuzrBbjIWC8g_MNWdg4Wipz5P_qmbbn2gKwikQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbx1UVsvlXB7zjv6y-7Dn0SkZjcGBswv2bMLFl-Z0aFiTEwTELLRmz9lydo4TbueKQ-KRA/exec";
 
     // --- State Management ---
     let dbKuitansi = [];
@@ -460,7 +464,7 @@
     let namaFileDokumen = "";
     let mimeTypeDokumen = "";
 
-    // State Upload Background
+    // --- Background Upload Sthiti ---
     let pendingBgBase64 = "";
     let pendingBgMimeType = "";
     let pendingBgFileName = "";
@@ -502,6 +506,7 @@
       }
     }
 
+    // --- Format Rupiah Global function ---
     function formatRpNumber(angka) {
       let number_string = angka.toString().replace(/[^,\d]/g, '');
       let split = number_string.split(',');
@@ -513,6 +518,7 @@
       return rupiah + ',' + desimal;
     }
 
+    // --- KERANJANG PENGUJIAN DINAMIS ---
     const daftarProduk = [
       { grup: "Daftar Mix Formula (DMF)", isUji: false, items: [
         { nama: "DMF LPA KELAS A", harga: 2935000 },
@@ -660,13 +666,13 @@
             renderHistory(); renderBukuBesar();
             setTanggalHariIni(); updateGeneratedId();
             
-            // Menerima pengaturan bendahara & background dari Database
+            // Database ninda Bendahara mattu Background settings sweekarisidaga
             if (result.pengaturan) {
               document.getElementById('settingNamaTtd').value = result.pengaturan.nama;
               document.getElementById('settingNipTtd').value = result.pengaturan.nip;
               updateTtdUI();
 
-              // Memuat Background dari Google Drive (jika ada)
+              // Google Drive ninda Background load madi
               currentBgUrl = result.pengaturan.bgUrl;
               if(currentBgUrl && currentBgUrl !== "") {
                 applyBlankoBackground(currentBgUrl);
@@ -699,7 +705,7 @@
       if(valNip) valNip.innerText = nip ? 'NIP. ' + nip : '';
     }
 
-    // --- MANAJEMEN BACKGROUND IMAGE ---
+    // --- BACKGROUND IMAGE NIRVAHANE ---
     function handleUploadBlanko(event) {
       const file = event.target.files[0];
       if (file) {
@@ -715,7 +721,7 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           pendingBgBase64 = e.target.result;
-          applyBlankoBackground(e.target.result); // Tampilkan Preview Langsung
+          applyBlankoBackground(e.target.result); // Preview torisu
         };
         reader.readAsDataURL(file);
       }
@@ -750,7 +756,7 @@
       const nip = document.getElementById('settingNipTtd').value;
       
       document.getElementById('loading-overlay').style.display = 'flex';
-      document.getElementById('loading-text').innerText = pendingBgBase64 ? "Mengunggah Background & Menyimpan pengaturan..." : "Menyimpan pengaturan ke Database...";
+      document.getElementById('loading-text').innerText = pendingBgBase64 ? "Menyimpan Data Bendahara & Background ke Database..." : "Menyimpan Data Bendahara & Background ke Database...";
       
       const payload = { 
         action: 'save_pengaturan', 
@@ -772,7 +778,6 @@
         if(result.status === 'success') {
           alert("✅ Data Bendahara & Background berhasil disimpan permanen ke Google Sheets!");
           
-          // Reset pending states
           pendingBgBase64 = "";
           isBgCleared = false;
           currentBgUrl = result.pengaturan.bgUrl;
@@ -984,7 +989,6 @@
       updateTtdUI();
     }
 
-    // --- Drag & Drop Kalibrasi ---
     let isDragging = false, isResizing = false, currentEl = null, startX, startY, startTopMm, startLeftMm, startWidthMm;
     let activeEl = null;
 
